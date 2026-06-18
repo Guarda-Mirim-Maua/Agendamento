@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useBranding } from '../hooks/useBranding';
 import {
   LayoutDashboard,
   CalendarCog,
@@ -11,6 +12,8 @@ import {
   X,
   Users,
   ScrollText,
+  Upload,
+  Trash2,
 } from 'lucide-react';
 
 const navItems = [
@@ -23,9 +26,11 @@ const navItems = [
 
 export default function AdminLayout() {
   const { logout, user } = useAuth();
+  const { logo, uploadLogo, resetLogo } = useBranding();
   const location = useLocation();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     // Se o usuário está em uma subpágina do admin que não seja o dashboard principal (/admin) e acabou de recarregar a tela (mount do componente),
@@ -35,13 +40,76 @@ export default function AdminLayout() {
     }
   }, [navigate]);
 
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      await uploadLogo(file);
+    } catch (err) {
+      console.error('Error uploading brand logo:', err);
+      alert('Erro ao carregar ou redimensionar a logo. Verifique se o arquivo é uma imagem válida.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const closeSidebar = () => setIsSidebarOpen(false);
 
   const sidebarContent = (
     <>
       <div className="p-4 border-b border-white/10 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Shield className="w-7 h-7 text-accent" />
+          <div className="relative group/logo">
+            <input 
+              type="file" 
+              accept="image/*" 
+              onChange={handleLogoChange} 
+              disabled={uploading}
+              className="hidden" 
+              id="admin-logo-upload" 
+            />
+            <label 
+              htmlFor="admin-logo-upload" 
+              title="Clique para carregar uma logo customizada"
+              className="relative block w-10 h-10 rounded-lg overflow-hidden border border-white/10 flex items-center justify-center bg-white/5 hover:bg-white/10 transition cursor-pointer shrink-0"
+            >
+              {logo ? (
+                <img 
+                  src={logo} 
+                  alt="Logo" 
+                  className="w-full h-full object-contain p-0.5" 
+                  referrerPolicy="no-referrer" 
+                />
+              ) : (
+                <Shield className="w-6 h-6 text-accent shrink-0" />
+              )}
+
+              {/* Hover Overlay */}
+              <div className="absolute inset-0 bg-black/70 opacity-0 group-hover/logo:opacity-100 flex items-center justify-center transition-opacity">
+                <Upload className="w-4 h-4 text-white" />
+              </div>
+            </label>
+
+            {/* Small reset button if logo is present */}
+            {logo && (
+              <button
+                onClick={async (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (confirm('Deseja realmente remover sua logo customizada e voltar ao escudo padrão?')) {
+                    await resetLogo();
+                  }
+                }}
+                title="Remover logo e restaurar escudo padrão"
+                className="absolute -top-1.5 -right-1.5 bg-red-600 hover:bg-red-700 text-white rounded-full p-0.5 shadow-md hover:scale-110 transition shrink-0 z-10 cursor-pointer"
+              >
+                <Trash2 className="w-2.5 h-2.5" />
+              </button>
+            )}
+          </div>
+
           <div>
             <h1 className="font-bold text-sm leading-tight text-white">Guarda Mirim</h1>
             <p className="text-[11px] text-blue-300">Painel Administrativo</p>
@@ -103,7 +171,16 @@ export default function AdminLayout() {
       {/* Mobile Sticky Navbar */}
       <header className="md:hidden flex items-center justify-between bg-primary-dark text-white px-4 py-3 sticky top-0 z-40 shadow-md">
         <div className="flex items-center gap-2">
-          <Shield className="w-6 h-6 text-accent" />
+          {logo ? (
+            <img 
+              src={logo} 
+              alt="Logo" 
+              className="w-7 h-7 object-contain rounded-md bg-white/10 p-0.5 shrink-0" 
+              referrerPolicy="no-referrer" 
+            />
+          ) : (
+            <Shield className="w-6 h-6 text-accent shrink-0" />
+          )}
           <div>
             <span className="font-bold text-xs uppercase tracking-wider block">Guarda Mirim de Mauá</span>
             <span className="text-[10px] text-blue-300 block">Painel Administrativo</span>

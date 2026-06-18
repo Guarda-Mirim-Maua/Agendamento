@@ -68,14 +68,42 @@ export default function Booking() {
 
   return (
     <div>
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-          <CalendarCheck className="w-8 h-8 text-primary" />
+      <div className="relative mb-8 text-center flex flex-col items-center justify-center">
+        {/* Main Header Container with Mascots flanking the Title */}
+        <div className="flex items-center justify-center gap-3 sm:gap-6 md:gap-10 w-full max-w-4xl px-2">
+          {/* Left Mascot (Boy Cadet - mascote_menino) */}
+          <div className="w-14 h-24 sm:w-20 sm:h-36 md:w-28 md:h-48 shrink-0 transition-all duration-300">
+            <img 
+              src="/mascote_menino.jpg" 
+              alt="Mascote Menino Guarda Mirim" 
+              className="w-full h-full object-contain mix-blend-multiply" 
+              referrerPolicy="no-referrer"
+            />
+          </div>
+
+          {/* Central Title Block */}
+          <div className="flex flex-col items-center justify-center">
+            <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-primary/10 mb-2 sm:mb-4">
+              <CalendarCheck className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+            </div>
+            <h2 className="text-lg sm:text-2xl md:text-3xl font-extrabold text-gray-800 uppercase tracking-tight">
+              Agendar Matrícula
+            </h2>
+            <p className="text-xs sm:text-sm text-gray-600 mt-2 font-medium max-w-xs sm:max-w-md">
+              Escolha o melhor dia e horário para a visita presencial
+            </p>
+          </div>
+
+          {/* Right Mascot (Girl Cadet - mascote_menina) */}
+          <div className="w-14 h-24 sm:w-20 sm:h-36 md:w-28 md:h-48 shrink-0 transition-all duration-300">
+            <img 
+              src="/mascote_menina.jpg" 
+              alt="Mascote Menina Guarda Mirim" 
+              className="w-full h-full object-contain mix-blend-multiply" 
+              referrerPolicy="no-referrer"
+            />
+          </div>
         </div>
-        <h2 className="text-2xl font-bold text-gray-800">Agendar Matrícula</h2>
-        <p className="text-gray-600 mt-1">
-          Escolha o melhor dia e horário para a visita presencial
-        </p>
       </div>
 
       {/* Step 1: Calendar */}
