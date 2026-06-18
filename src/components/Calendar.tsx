@@ -65,6 +65,9 @@ export default function Calendar({ selectedDate, onSelectDate }: CalendarProps) 
     if (isBefore(date, startOfDay(new Date()))) return false;
 
     const dateStr = format(date, 'yyyy-MM-dd');
+    if (config.startDate && dateStr < config.startDate) return false;
+    if (config.endDate && dateStr > config.endDate) return false;
+
     const override = overrides.get(dateStr);
 
     if (override?.type === 'blocked') {

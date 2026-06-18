@@ -6,11 +6,14 @@ import { db } from '../../lib/firebase';
 import { doc, setDoc, deleteDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { getScheduleConfig, getOverridesForMonth, type ScheduleConfig, type DayOverride, type TimeRange, type Appointment } from '../../lib/availability';
 import { ChevronLeft, ChevronRight, Ban, Plus, Save, Trash2, Loader2, Clock, CalendarOff, CalendarPlus, Settings } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { addAuditLog } from '../../lib/audit';
 
 const DAY_MAP: Record<number, string> = { 0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat' };
 const DAY_LABELS: Record<string, string> = { sun: 'Domingo', mon: 'Segunda', tue: 'Terça', wed: 'Quarta', thu: 'Quinta', fri: 'Sexta', sat: 'Sábado' };
 
 export default function Schedule() {
+  const { user, userName } = useAuth();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [config, setConfig] = useState<ScheduleConfig | null>(null);
   const [overrides, setOverrides] = useState<Map<string, DayOverride>>(new Map());
@@ -122,6 +125,19 @@ export default function Schedule() {
       await setDoc(doc(db, 'overrides', dateStr), data);
       overrides.set(dateStr, data);
       setOverrides(new Map(overrides));
+
+      if (user) {
+        const slotsStr = overrideType === 'extra' 
+          ? extraSlots.map(s => `${s.start}-${s.end}`).join(', ')
+          : !blockAllDay ? blockedSlots.map(s => `${s.start}-${s.end}`).join(', ') : 'Dia Inteiro';
+        await addAuditLog({
+          userId: user.uid,
+          userEmail: user.email || '',
+          userName: userName,
+          action: 'save_override',
+          details: `Configurou alteração de horário (${overrideType === 'blocked' ? 'Bloqueado' : 'Hora Extra'}) para o dia ${format(selectedDate, 'dd/MM/yyyy')}. Período: ${slotsStr}${overrideReason ? ` (Motivo: ${overrideReason})` : ''}`
+        });
+      }
     } catch (err) {
       console.error('Error saving override:', err);
       alert('Erro ao salvar.');
@@ -138,6 +154,16 @@ export default function Schedule() {
       await deleteDoc(doc(db, 'overrides', dateStr));
       overrides.delete(dateStr);
       setOverrides(new Map(overrides));
+
+      if (user) {
+        await addAuditLog({
+          userId: user.uid,
+          userEmail: user.email || '',
+          userName: userName,
+          action: 'delete_override',
+          details: `Removeu alteração de horário (bloqueio/extra) do dia ${format(selectedDate, 'dd/MM/yyyy')}`
+        });
+      }
     } catch (err) {
       console.error('Error deleting override:', err);
     }
@@ -152,6 +178,21 @@ export default function Schedule() {
       setConfig(editConfig);
       setShowConfigEditor(false);
       alert('Configuração salva com sucesso!');
+
+      if (user) {
+        const dateDetails = [];
+        if (editConfig.startDate) dateDetails.push(`Início: ${format(new Date(editConfig.startDate + 'T12:00:00'), 'dd/MM/yyyy')}`);
+        if (editConfig.endDate) dateDetails.push(`Fim: ${format(new Date(editConfig.endDate + 'T12:00:00'), 'dd/MM/yyyy')}`);
+        const datePeriodStr = dateDetails.length > 0 ? ` | Período Ativo: ${dateDetails.join(' a ')}` : '';
+
+        await addAuditLog({
+          userId: user.uid,
+          userEmail: user.email || '',
+          userName: userName,
+          action: 'update_config',
+          details: `Atualizou as configurações padrão da grade de horários semanais (Duração do agendamento: ${editConfig.slotDuration} minutos${datePeriodStr})`
+        });
+      }
     } catch (err) {
       console.error('Error saving config:', err);
       alert('Erro ao salvar configuração.');
@@ -212,16 +253,28 @@ export default function Schedule() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Gerenciar Horários</h1>
         <button
           onClick={() => setShowConfigEditor(!showConfigEditor)}
-          className="flex items-center gap-2 px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-light transition-colors cursor-pointer"
+          className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-light transition-colors cursor-pointer self-start sm:self-auto"
         >
           <Settings className="w-4 h-4" />
           {showConfigEditor ? 'Fechar Configuração' : 'Editar Grade Padrão'}
         </button>
       </div>
+
+      {config && (config.startDate || config.endDate) && (
+        <div className="bg-amber-50 text-amber-800 text-sm font-semibold p-4 rounded-lg border border-amber-200 flex items-center gap-2 mb-6">
+          <Clock className="w-5 h-5 text-amber-600 shrink-0" />
+          <span>
+            <strong>Temporada do Atendimento Ativa:</strong>{' '}
+            {config.startDate ? format(new Date(config.startDate + 'T12:00:00'), 'dd/MM/yyyy') : 'Início imediato'}
+            {' '}até{' '}
+            {config.endDate ? format(new Date(config.endDate + 'T12:00:00'), 'dd/MM/yyyy') : 'Sem data fim definida'}.
+          </span>
+        </div>
+      )}
 
       {/* Config Editor */}
       {showConfigEditor && editConfig && (
@@ -230,14 +283,45 @@ export default function Schedule() {
             <Settings className="w-5 h-5 text-primary" />
             Grade Padrão de Horários
           </h2>
-          <div className="mb-3">
+          <div className="mb-4">
             <label className="text-sm font-medium text-gray-700">Duração do atendimento (min)</label>
             <input
               type="number"
               value={editConfig.slotDuration}
               onChange={(e) => setEditConfig({ ...editConfig, slotDuration: Number(e.target.value) })}
-              className="ml-3 w-20 px-2 py-1 border border-gray-300 rounded text-sm"
+              className="ml-3 w-20 px-2 py-1 border border-gray-300 rounded text-sm outline-none focus:ring-2 focus:ring-primary/20"
             />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5 p-4 bg-blue-50/50 border border-blue-100 rounded-lg">
+            <div>
+              <label className="text-xs font-bold text-gray-700 block mb-1">
+                Data de Início da Temporada
+              </label>
+              <input
+                type="date"
+                value={editConfig.startDate || ''}
+                onChange={(e) => setEditConfig({ ...editConfig, startDate: e.target.value || undefined })}
+                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition"
+              />
+              <p className="text-[10px] text-gray-500 mt-1">
+                Deixe em branco para liberar agendamentos a partir de hoje.
+              </p>
+            </div>
+            <div>
+              <label className="text-xs font-bold text-gray-700 block mb-1">
+                Data Fim (Limite do Atendimento)
+              </label>
+              <input
+                type="date"
+                value={editConfig.endDate || ''}
+                onChange={(e) => setEditConfig({ ...editConfig, endDate: e.target.value || undefined })}
+                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition"
+              />
+              <p className="text-[10px] text-gray-500 mt-1">
+                Nenhum novo agendamento será aceito após esta data (ex: 13/08/2026).
+              </p>
+            </div>
           </div>
 
           <div className="space-y-3">
@@ -346,6 +430,8 @@ export default function Schedule() {
                   const isExtra = info.override?.type === 'extra';
                   const hasDefault = info.hasDefault;
                   const isPast = isBefore(d, startOfDay(new Date()));
+                  const dateStr = format(d, 'yyyy-MM-dd');
+                  const isOutsideActiveDates = (config?.startDate && dateStr < config.startDate) || (config?.endDate && dateStr > config.endDate);
 
                   return (
                     <button
@@ -355,10 +441,11 @@ export default function Schedule() {
                         ${!inMonth ? 'text-gray-300' : ''}
                         ${inMonth && isPast ? 'text-gray-400' : ''}
                         ${selected ? 'bg-primary text-white font-bold ring-2 ring-primary ring-offset-2' : ''}
-                        ${!selected && isBlockedAllDay ? 'bg-red-50 text-red-400 line-through' : ''}
-                        ${!selected && isBlockedPartial ? 'bg-orange-50 text-orange-600 border border-orange-200' : ''}
-                        ${!selected && isExtra ? 'bg-green-50 text-green-700 font-medium border border-green-200' : ''}
-                        ${!selected && !isBlocked && !isExtra && hasDefault && inMonth && !isPast ? 'bg-blue-50 text-primary font-medium' : ''}
+                        ${!selected && isOutsideActiveDates ? 'opacity-40 bg-gray-50 border border-dashed border-gray-300' : ''}
+                        ${!selected && !isOutsideActiveDates && isBlockedAllDay ? 'bg-red-50 text-red-400 line-through' : ''}
+                        ${!selected && !isOutsideActiveDates && isBlockedPartial ? 'bg-orange-50 text-orange-600 border border-orange-200' : ''}
+                        ${!selected && !isOutsideActiveDates && isExtra ? 'bg-green-50 text-green-700 font-medium border border-green-200' : ''}
+                        ${!selected && !isOutsideActiveDates && !isBlocked && !isExtra && hasDefault && inMonth && !isPast ? 'bg-blue-50 text-primary font-medium' : ''}
                         ${!selected && inMonth ? 'hover:ring-2 hover:ring-gray-300' : ''}
                       `}
                     >
@@ -377,6 +464,12 @@ export default function Schedule() {
               <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-red-50 border border-red-200" /><span>Bloqueado (Dia)</span></div>
               <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-orange-50 border border-orange-200" /><span>Bloqueado (Parcial)</span></div>
               <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-green-50 border border-green-200" /><span>Extra</span></div>
+              {config && (config.startDate || config.endDate) && (
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded bg-gray-50 border border-dashed border-gray-300 opacity-60" />
+                  <span>Fora da Temporada</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -392,36 +485,39 @@ export default function Schedule() {
                 </h3>
                 {(() => {
                   const info = getDayInfo(selectedDate);
-                  if (info.override?.type === 'blocked') {
-                    const isAllDay = !info.override.slots || info.override.slots.length === 0;
-                    return (
-                      <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 p-2 rounded-lg mt-2">
-                        <CalendarOff className="w-4 h-4 text-red-500 flex-shrink-0" />
-                        <span>
-                          {isAllDay ? 'Dia bloqueado' : `Bloqueado parcial: ${info.override.slots?.map(s => `${s.start}-${s.end}`).join(', ')}`}
-                          {info.override.reason ? ` (${info.override.reason})` : ''}
-                        </span>
-                      </div>
-                    );
-                  }
-                  if (info.override?.type === 'extra') {
-                    return (
-                      <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 p-2 rounded-lg mt-2">
-                        <CalendarPlus className="w-4 h-4" />
-                        <span>Horário extra: {info.override.slots?.map(s => `${s.start}-${s.end}`).join(', ')}</span>
-                      </div>
-                    );
-                  }
-                  if (info.hasDefault) {
-                    return (
-                      <div className="flex items-center gap-2 text-sm text-primary bg-blue-50 p-2 rounded-lg mt-2">
-                        <Clock className="w-4 h-4" />
-                        <span>Horário padrão ({DAY_LABELS[info.dayKey]})</span>
-                      </div>
-                    );
-                  }
+                  const sDateStr = format(selectedDate, 'yyyy-MM-dd');
+                  const isOutsideActive = (config?.startDate && sDateStr < config.startDate) || (config?.endDate && sDateStr > config.endDate);
+                  
                   return (
-                    <p className="text-sm text-gray-500 mt-2">Sem horários configurados.</p>
+                    <>
+                      {isOutsideActive && (
+                        <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 p-2 rounded-lg mt-1 mb-2 border border-amber-200">
+                          <Clock className="w-3.5 h-3.5 shrink-0" />
+                          <span>Este dia está fora da temporada de atendimento vigente.</span>
+                        </div>
+                      )}
+                      {info.override?.type === 'blocked' ? (
+                        <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 p-2 rounded-lg mt-2">
+                          <CalendarOff className="w-4 h-4 text-red-500 flex-shrink-0" />
+                          <span>
+                            {(!info.override.slots || info.override.slots.length === 0) ? 'Dia bloqueado' : `Bloqueado parcial: ${info.override.slots?.map(s => `${s.start}-${s.end}`).join(', ')}`}
+                            {info.override.reason ? ` (${info.override.reason})` : ''}
+                          </span>
+                        </div>
+                      ) : info.override?.type === 'extra' ? (
+                        <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 p-2 rounded-lg mt-2">
+                          <CalendarPlus className="w-4 h-4" />
+                          <span>Horário extra: {info.override.slots?.map(s => `${s.start}-${s.end}`).join(', ')}</span>
+                        </div>
+                      ) : info.hasDefault ? (
+                        <div className="flex items-center gap-2 text-sm text-primary bg-blue-50 p-2 rounded-lg mt-2">
+                          <Clock className="w-4 h-4" />
+                          <span>Horário padrão ({DAY_LABELS[info.dayKey]})</span>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500 mt-2">Sem horários configurados.</p>
+                      )}
+                    </>
                   );
                 })()}
 

@@ -9,7 +9,6 @@ import {
   getDocs,
 } from 'firebase/firestore';
 import { generateReminderLink } from '../../lib/whatsapp';
-import { seedDefaultConfig } from '../../lib/seed';
 import type { Appointment } from '../../lib/availability';
 import {
   CalendarCheck,
@@ -17,14 +16,12 @@ import {
   Users,
   MessageCircle,
   AlertTriangle,
-  Database,
   Loader2,
 } from 'lucide-react';
 
 export default function Dashboard() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [seeding, setSeeding] = useState(false);
 
   const today = new Date();
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
@@ -58,18 +55,6 @@ export default function Dashboard() {
     loadAppointments();
   }, []);
 
-  async function handleSeed() {
-    setSeeding(true);
-    try {
-      await seedDefaultConfig();
-      alert('Configuração padrão criada com sucesso!');
-    } catch (err) {
-      console.error('Error seeding:', err);
-      alert('Erro ao criar configuração.');
-    }
-    setSeeding(false);
-  }
-
   // Group by date
   const grouped = appointments.reduce<Record<string, Appointment[]>>((acc, apt) => {
     if (!acc[apt.date]) acc[apt.date] = [];
@@ -83,7 +68,7 @@ export default function Dashboard() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
           <p className="text-gray-500 text-sm">
@@ -91,15 +76,6 @@ export default function Dashboard() {
             {format(weekEnd, "dd/MM/yyyy", { locale: ptBR })}
           </p>
         </div>
-        <button
-          onClick={handleSeed}
-          disabled={seeding}
-          className="flex items-center gap-2 px-4 py-2 text-sm bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 transition-colors cursor-pointer disabled:opacity-50"
-          title="Criar configuração padrão de horários no Firestore"
-        >
-          {seeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
-          Inicializar Config
-        </button>
       </div>
 
       {/* Stats cards */}

@@ -11,6 +11,8 @@ import {
 } from 'firebase/firestore';
 import { generateReminderLink } from '../../lib/whatsapp';
 import type { Appointment } from '../../lib/availability';
+import { useAuth } from '../../contexts/AuthContext';
+import { addAuditLog } from '../../lib/audit';
 import {
   Search,
   MessageCircle,
@@ -24,6 +26,7 @@ import {
 type StatusFilter = 'all' | 'confirmed' | 'cancelled';
 
 export default function Appointments() {
+  const { user, userName } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -50,6 +53,20 @@ export default function Appointments() {
     setLoading(false);
   }
 
+  async function handleSendReminder(apt: Appointment) {
+    if (user) {
+      await addAuditLog({
+        userId: user.uid,
+        userEmail: user.email || '',
+        userName: userName,
+        action: 'whatsapp_reminder',
+        details: `Enviou/solicitou lembrete para WhatsApp do responsável (${apt.parentName}) da criança (${apt.childName}) para o horário das ${apt.time} no dia ${format(new Date(apt.date + 'T12:00:00'), 'dd/MM/yyyy')}`
+      });
+    }
+    const link = generateReminderLink(apt.phone, apt.parentName, apt.childName, apt.date, apt.time);
+    window.open(link, '_blank');
+  }
+
   async function handleCancel(apt: Appointment) {
     if (!apt.id || !confirm(`Cancelar agendamento de ${apt.parentName}?`)) return;
     setActionLoading(apt.id);
@@ -58,6 +75,15 @@ export default function Appointments() {
       setAppointments((prev) =>
         prev.map((a) => (a.id === apt.id ? { ...a, status: 'cancelled' } : a))
       );
+      if (user) {
+        await addAuditLog({
+          userId: user.uid,
+          userEmail: user.email || '',
+          userName: userName,
+          action: 'cancel_appointment',
+          details: `Cancelou o agendamento de ${apt.parentName} (Criança: ${apt.childName}) do dia ${format(new Date(apt.date + 'T12:00:00'), 'dd/MM/yyyy')} às ${apt.time}`
+        });
+      }
     } catch (err) {
       console.error('Error cancelling:', err);
       alert('Erro ao cancelar agendamento.');
@@ -73,6 +99,15 @@ export default function Appointments() {
       setAppointments((prev) =>
         prev.map((a) => (a.id === apt.id ? { ...a, status: 'confirmed' } : a))
       );
+      if (user) {
+        await addAuditLog({
+          userId: user.uid,
+          userEmail: user.email || '',
+          userName: userName,
+          action: 'restore_appointment',
+          details: `Restaurou o agendamento de ${apt.parentName} (Criança: ${apt.childName}) do dia ${format(new Date(apt.date + 'T12:00:00'), 'dd/MM/yyyy')} às ${apt.time}`
+        });
+      }
     } catch (err) {
       console.error('Error restoring:', err);
     }
@@ -95,11 +130,11 @@ export default function Appointments() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Agendamentos</h1>
         <button
           onClick={loadAppointments}
-          className="flex items-center gap-2 px-3 py-2 text-sm bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors cursor-pointer"
+          className="flex items-center justify-center gap-2 px-3 py-2 text-sm bg-white text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer self-start sm:self-auto"
         >
           <RefreshCw className="w-4 h-4" />
           Atualizar
@@ -108,8 +143,8 @@ export default function Appointments() {
 
       {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
-        <div className="flex flex-wrap gap-3">
-          <div className="flex-1 min-w-[200px]">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1 min-w-0">
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
@@ -121,25 +156,27 @@ export default function Appointments() {
               />
             </div>
           </div>
-          <input
-            type="date"
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
-          />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
-          >
-            <option value="all">Todos</option>
-            <option value="confirmed">Confirmados</option>
-            <option value="cancelled">Cancelados</option>
-          </select>
+          <div className="flex gap-2 sm:w-auto w-full">
+            <input
+              type="date"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="flex-1 sm:flex-initial px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none bg-white"
+            />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+              className="flex-1 sm:flex-initial px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none bg-white"
+            >
+              <option value="all">Todos</option>
+              <option value="confirmed">Confirmados</option>
+              <option value="cancelled">Cancelados</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      {/* Table */}
+      {/* Table & Cards */}
       {loading ? (
         <div className="flex items-center justify-center py-12 text-gray-500">
           <Loader2 className="w-6 h-6 animate-spin mr-2" />
@@ -152,7 +189,8 @@ export default function Appointments() {
         </div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
@@ -196,15 +234,13 @@ export default function Appointments() {
                         <div className="flex items-center justify-end gap-2">
                           {apt.status === 'confirmed' && (
                             <>
-                              <a
-                                href={generateReminderLink(apt.phone, apt.parentName, apt.childName, apt.date, apt.time)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                                title="Enviar lembrete WhatsApp"
+                              <button
+                                onClick={() => handleSendReminder(apt)}
+                                className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors cursor-pointer"
+                                title="Enviar lembrete WhatsApp e registrar no histórico"
                               >
                                 <MessageCircle className="w-4 h-4" />
-                              </a>
+                              </button>
                               <button
                                 onClick={() => handleCancel(apt)}
                                 disabled={actionLoading === apt.id}
@@ -241,6 +277,98 @@ export default function Appointments() {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile Cards View */}
+          <div className="block md:hidden divide-y divide-gray-100">
+            {filtered.map((apt) => {
+              const dateObj = new Date(apt.date + 'T12:00:00');
+              const formattedPhone = apt.phone.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+              return (
+                <div key={apt.id} className="p-4 space-y-3 bg-white">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono font-bold text-primary bg-primary/5 px-2.5 py-1 rounded">
+                      {apt.time}
+                    </span>
+                    <span className="text-xs font-semibold text-gray-500 capitalize">
+                      {format(dateObj, "dd/MM/yyyy (EEE)", { locale: ptBR })}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1 text-sm text-gray-700">
+                    <div>
+                      <span className="text-gray-400 text-xs block">Responsável</span>
+                      <span className="font-semibold text-gray-800">{apt.parentName}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 text-xs block">Criança</span>
+                      <span>{apt.childName}</span>
+                    </div>
+                    <div className="flex items-center justify-between pt-1">
+                      <div>
+                        <span className="text-gray-400 text-xs block">WhatsApp</span>
+                        <span className="font-mono text-xs">{formattedPhone}</span>
+                      </div>
+                      <div>
+                        {apt.status === 'confirmed' ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-green-50 text-green-700 rounded-full text-xs font-medium">
+                            <CheckCircle className="w-3 h-3" />
+                            Confirmado
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-red-50 text-red-700 rounded-full text-xs font-medium">
+                            <XCircle className="w-3 h-3" />
+                            Cancelado
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions Row */}
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                    {apt.status === 'confirmed' && (
+                      <>
+                        <button
+                          onClick={() => handleSendReminder(apt)}
+                          className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors cursor-pointer"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                          Lembrete
+                        </button>
+                        <button
+                          onClick={() => handleCancel(apt)}
+                          disabled={actionLoading === apt.id}
+                          className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors cursor-pointer disabled:opacity-50"
+                        >
+                          {actionLoading === apt.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <XCircle className="w-3.5 h-3.5" />
+                          )}
+                          Cancelar
+                        </button>
+                      </>
+                    )}
+                    {apt.status === 'cancelled' && (
+                      <button
+                        onClick={() => handleRestore(apt)}
+                        disabled={actionLoading === apt.id}
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        {actionLoading === apt.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <CheckCircle className="w-3.5 h-3.5" />
+                        )}
+                        Restaurar
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
           <div className="px-4 py-3 border-t border-gray-200 bg-gray-50 text-xs text-gray-500">
             {filtered.length} agendamento{filtered.length !== 1 ? 's' : ''} encontrado{filtered.length !== 1 ? 's' : ''}
           </div>

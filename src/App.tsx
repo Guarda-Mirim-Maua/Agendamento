@@ -11,6 +11,8 @@ import Login from './pages/Login';
 import Dashboard from './pages/admin/Dashboard';
 import Appointments from './pages/admin/Appointments';
 import Schedule from './pages/admin/Schedule';
+import Collaborators from './pages/admin/Collaborators';
+import AuditLogs from './pages/admin/AuditLogs';
 
 export default function App() {
   return (
@@ -42,6 +44,8 @@ export default function App() {
             <Route index element={<Dashboard />} />
             <Route path="agendamentos" element={<Appointments />} />
             <Route path="horarios" element={<Schedule />} />
+            <Route path="colaboradores" element={<Collaborators />} />
+            <Route path="logs" element={<AuditLogs />} />
           </Route>
 
           {/* Fallback Catch-all redirection */}

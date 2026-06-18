@@ -25,6 +25,8 @@ export interface TimeRange {
 export interface ScheduleConfig {
   slotDuration: number; // minutes
   defaultSchedule: Record<string, TimeRange[]>; // "mon" | "tue" | ... 
+  startDate?: string; // "yyyy-MM-dd"
+  endDate?: string;   // "yyyy-MM-dd"
 }
 
 export interface DayOverride {
@@ -127,10 +129,19 @@ export async function getBookedSlotsForDate(
 
 export async function getAvailableSlots(date: Date): Promise<string[]> {
   const dateStr = format(date, 'yyyy-MM-dd');
+  const config = await getScheduleConfig();
+
+  // Guard: if outside the active start or end dates season, no slots are available
+  if (config.startDate && dateStr < config.startDate) {
+    return [];
+  }
+  if (config.endDate && dateStr > config.endDate) {
+    return [];
+  }
+
   const dayOfWeek = getDay(date);
   const dayKey = DAY_MAP[dayOfWeek];
 
-  const config = await getScheduleConfig();
   const override = await getOverrideForDate(dateStr);
 
   // If blocked completely (type is 'blocked' and no slots), return empty
