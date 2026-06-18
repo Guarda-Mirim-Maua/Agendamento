@@ -72,9 +72,9 @@ export default function Booking() {
         {/* Main Header Container with Mascots flanking the Title */}
         <div className="flex items-center justify-center gap-3 sm:gap-6 md:gap-10 w-full max-w-4xl px-2">
           {/* Left Mascot (Boy Cadet - mascote_menino) */}
-          <div className="w-14 h-24 sm:w-20 sm:h-36 md:w-28 md:h-48 shrink-0 transition-all duration-300">
+          <div className="w-20 h-36 sm:w-32 sm:h-56 md:w-40 md:h-72 shrink-0 transition-all duration-300">
             <img 
-              src="/mascote_menino.jpg" 
+              src="https://cdn.phototourl.com/free/2026-06-18-dbbbf891-d286-42dc-a89a-831aa02cee66.png" 
               alt="Mascote Menino Guarda Mirim" 
               className="w-full h-full object-contain mix-blend-multiply" 
               referrerPolicy="no-referrer"
@@ -95,9 +95,9 @@ export default function Booking() {
           </div>
 
           {/* Right Mascot (Girl Cadet - mascote_menina) */}
-          <div className="w-14 h-24 sm:w-20 sm:h-36 md:w-28 md:h-48 shrink-0 transition-all duration-300">
+          <div className="w-20 h-36 sm:w-32 sm:h-56 md:w-40 md:h-72 shrink-0 transition-all duration-300">
             <img 
-              src="/mascote_menina.jpg" 
+              src="https://cdn.phototourl.com/free/2026-06-18-df78d485-3def-4100-a2c9-edabba7a2375.png" 
               alt="Mascote Menina Guarda Mirim" 
               className="w-full h-full object-contain mix-blend-multiply" 
               referrerPolicy="no-referrer"
