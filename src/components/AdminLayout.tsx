@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
   LayoutDashboard,
@@ -24,7 +24,16 @@ const navItems = [
 export default function AdminLayout() {
   const { logout, user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    // Se o usuário está em uma subpágina do admin que não seja o dashboard principal (/admin) e acabou de recarregar a tela (mount do componente),
+    // redirecionamos ele de volta para o dashboard '/admin' para evitar telas em branco ou inconsistências comuns pós-refresh.
+    if (window.location.pathname !== '/admin' && window.location.pathname.startsWith('/admin')) {
+      navigate('/admin', { replace: true });
+    }
+  }, [navigate]);
 
   const closeSidebar = () => setIsSidebarOpen(false);
 

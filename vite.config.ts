@@ -4,5 +4,5 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  base: './', // <--- Isso garante que os assets apontem para a subpasta correta
+  base: '/', // <--- Garante que os assets apontem para a raiz absoluta no build de produção
 })
