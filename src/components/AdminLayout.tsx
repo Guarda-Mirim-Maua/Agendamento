@@ -24,6 +24,8 @@ const navItems = [
   { path: '/admin/logs', icon: ScrollText, label: 'Histórico / Logs' },
 ];
 
+let isInitialLoad = true;
+
 export default function AdminLayout() {
   const { logout, user } = useAuth();
   const { logo, uploadLogo, resetLogo } = useBranding();
@@ -35,9 +37,10 @@ export default function AdminLayout() {
   useEffect(() => {
     // Se o usuário está em uma subpágina do admin que não seja o dashboard principal (/admin) e acabou de recarregar a tela (mount do componente),
     // redirecionamos ele de volta para o dashboard '/admin' para evitar telas em branco ou inconsistências comuns pós-refresh.
-    if (window.location.pathname !== '/admin' && window.location.pathname.startsWith('/admin')) {
+    if (isInitialLoad && window.location.pathname !== '/admin' && window.location.pathname.startsWith('/admin')) {
       navigate('/admin', { replace: true });
     }
+    isInitialLoad = false;
   }, [navigate]);
 
   const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
