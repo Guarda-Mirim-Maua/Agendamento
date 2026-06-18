@@ -1,7 +1,10 @@
+/* eslint-disable react-hooks/set-state-in-effect, @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useBranding } from '../hooks/useBranding';
+import { db } from '../lib/firebase';
+import { collection, query, onSnapshot } from 'firebase/firestore';
 import {
   LayoutDashboard,
   CalendarCog,
@@ -14,6 +17,7 @@ import {
   ScrollText,
   Upload,
   Trash2,
+  Bell,
 } from 'lucide-react';
 
 const navItems = [
@@ -33,6 +37,25 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [unseenCount, setUnseenCount] = useState<number>(() => {
+    const saved = localStorage.getItem('admin_unseen_count');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(() => {
+    return typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'default';
+  });
+
+  const requestPermission = async () => {
+    if ('Notification' in window) {
+      const permission = await Notification.requestPermission();
+      setNotificationPermission(permission);
+      if (permission === 'granted') {
+        new Notification('Guarda Mirim', {
+          body: 'Notificações de agendamentos ativadas com sucesso!',
+        });
+      }
+    }
+  };
 
   useEffect(() => {
     // Se o usuário está em uma subpágina do admin que não seja o dashboard principal (/admin) e acabou de recarregar a tela (mount do componente),
@@ -42,6 +65,96 @@ export default function AdminLayout() {
     }
     isInitialLoad = false;
   }, [navigate]);
+
+  // Whenever they visit "/admin/agendamentos", we clear the count
+  useEffect(() => {
+    if (location.pathname === '/admin/agendamentos') {
+      localStorage.setItem('admin_last_view_time', String(Date.now()));
+      setUnseenCount(0);
+      localStorage.setItem('admin_unseen_count', '0');
+      
+      if ('navigator' in window && 'setAppBadge' in navigator) {
+        navigator.clearAppBadge().catch(err => console.log('Clear badge error:', err));
+      }
+    }
+  }, [location.pathname]);
+
+  // Listen for brand new bookings live from Firestore
+  useEffect(() => {
+    const lastCheckedStr = localStorage.getItem('admin_last_view_time');
+    const lastChecked = lastCheckedStr ? parseInt(lastCheckedStr, 10) : Date.now();
+
+    const q = query(collection(db, 'appointments'));
+    let isFirstRun = true;
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      let count = 0;
+      let newestApt: any = null;
+
+      snapshot.docs.forEach((doc) => {
+        const item = doc.data();
+        if (item.createdAt && item.createdAt > lastChecked) {
+          count++;
+          if (!newestApt || item.createdAt > newestApt.createdAt) {
+            newestApt = { id: doc.id, ...item };
+          }
+        }
+      });
+
+      // Avoid overwriting if they are currently active on "/admin/agendamentos" (this prevents temporary jumps to 1)
+      if (window.location.pathname === '/admin/agendamentos') {
+        count = 0;
+      }
+
+      setUnseenCount(count);
+      localStorage.setItem('admin_unseen_count', String(count));
+
+      // Display numeric App Icon Badge (PWA)
+      if ('navigator' in window && 'setAppBadge' in navigator) {
+        if (count > 0) {
+          navigator.setAppBadge(count).catch(err => console.log('Badge setting error:', err));
+        } else {
+          navigator.clearAppBadge().catch(err => console.log('Badge clear error:', err));
+        }
+      }
+
+      // If a brand new appointment rolls in live while they are online:
+      if (!isFirstRun && newestApt && window.location.pathname !== '/admin/agendamentos') {
+        // Audio Notification Chime
+        try {
+          const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+          const oscillator = audioCtx.createOscillator();
+          const gainNode = audioCtx.createGain();
+          oscillator.connect(gainNode);
+          gainNode.connect(audioCtx.destination);
+          
+          oscillator.type = 'sine';
+          oscillator.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+          oscillator.frequency.setValueAtTime(880, audioCtx.currentTime + 0.15); // A5
+          
+          gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+          
+          oscillator.start();
+          oscillator.stop(audioCtx.currentTime + 0.4);
+        } catch (e) {
+          console.warn('Audio play failed:', e);
+        }
+
+        // Web Browser Popup Notification
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('Novo Agendamento!', {
+            body: `${newestApt.parentName} agendou para ${newestApt.childName} em ${newestApt.date} às ${newestApt.time}h`,
+            icon: logo || '/favicon.svg'
+          });
+        }
+      }
+
+      isFirstRun = false;
+    });
+
+    return () => unsubscribe();
+  }, [logo]);
 
   const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -133,6 +246,7 @@ export default function AdminLayout() {
             item.path === '/admin'
               ? location.pathname === '/admin'
               : location.pathname.startsWith(item.path);
+          const hasBadge = item.path === '/admin/agendamentos' && unseenCount > 0;
           return (
             <Link
               key={item.path}
@@ -144,27 +258,68 @@ export default function AdminLayout() {
                   : 'text-blue-200 hover:bg-white/10 hover:text-white'
               }`}
             >
-              <item.icon className="w-5 h-5" />
-              {item.label}
+              <item.icon className="w-5 h-5 shrink-0" />
+              <span className="flex-1">{item.label}</span>
+              {hasBadge && (
+                <span className="mr-2 bg-red-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full animate-pulse shrink-0">
+                  {unseenCount}
+                </span>
+              )}
             </Link>
           );
         })}
       </nav>
 
-      <div className="p-4 border-t border-white/10">
-        <p className="text-xs text-blue-300 mb-2 truncate" title={user?.email}>
-          {user?.email}
-        </p>
-        <button
-          onClick={() => {
-            closeSidebar();
-            logout();
-          }}
-          className="flex items-center gap-2 text-sm text-blue-200 hover:text-white transition-colors cursor-pointer w-full text-left"
-        >
-          <LogOut className="w-4 h-4" />
-          Sair
-        </button>
+      <div className="p-4 border-t border-white/10 space-y-3">
+        {/* Alerts / Push Notification Controller */}
+        <div className="bg-white/5 rounded-lg p-3 text-xs border border-white/5 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-blue-200 font-medium flex items-center gap-1.5">
+              <Bell className="w-3.5 h-3.5 text-accent-light" />
+              Notificações Push
+            </span>
+            <span className={`w-2 h-2 rounded-full ${notificationPermission === 'granted' ? 'bg-green-500' : 'bg-amber-500 animate-pulse'}`} />
+          </div>
+          
+          {notificationPermission !== 'granted' ? (
+            <button
+              onClick={requestPermission}
+              className="w-full bg-accent hover:bg-accent-light text-primary-dark font-semibold py-1.5 px-2 rounded text-[11px] transition-colors cursor-pointer text-center"
+            >
+              Ativar Alertas
+            </button>
+          ) : (
+            <div className="flex items-center justify-between gap-1 text-[10px] text-blue-300">
+              <span>Autorizado no navegador</span>
+              <button 
+                onClick={() => {
+                  new Notification('Guarda Mirim - Teste', {
+                    body: 'Os alertas de agendamento estão ativos!',
+                  });
+                }}
+                className="text-white hover:underline focus:outline-none cursor-pointer"
+              >
+                Testar
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div>
+          <p className="text-xs text-blue-300 mb-2 truncate" title={user?.email}>
+            {user?.email}
+          </p>
+          <button
+            onClick={() => {
+              closeSidebar();
+              logout();
+            }}
+            className="flex items-center gap-2 text-sm text-blue-200 hover:text-white transition-colors cursor-pointer w-full text-left"
+          >
+            <LogOut className="w-4 h-4" />
+            Sair
+          </button>
+        </div>
       </div>
     </>
   );
