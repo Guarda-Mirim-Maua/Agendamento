@@ -8,6 +8,7 @@ import {
   getDocs,
   doc,
   updateDoc,
+  deleteDoc,
 } from 'firebase/firestore';
 import { generateReminderLink } from '../../lib/whatsapp';
 import type { Appointment } from '../../lib/availability';
@@ -21,6 +22,7 @@ import {
   Loader2,
   Filter,
   RefreshCw,
+  Trash2,
 } from 'lucide-react';
 
 type StatusFilter = 'all' | 'confirmed' | 'cancelled';
@@ -110,6 +112,28 @@ export default function Appointments() {
       }
     } catch (err) {
       console.error('Error restoring:', err);
+    }
+    setActionLoading(null);
+  }
+
+  async function handleDelete(apt: Appointment) {
+    if (!apt.id || !confirm(`Excluir permanentemente o agendamento de ${apt.parentName} (Criança: ${apt.childName})? Esta ação não pode ser desfazer.`)) return;
+    setActionLoading(apt.id);
+    try {
+      await deleteDoc(doc(db, 'appointments', apt.id));
+      setAppointments((prev) => prev.filter((a) => a.id !== apt.id));
+      if (user) {
+        await addAuditLog({
+          userId: user.uid,
+          userEmail: user.email || '',
+          userName: userName,
+          action: 'delete_appointment',
+          details: `Excluiu permanentemente o agendamento de ${apt.parentName} (Criança: ${apt.childName}) do dia ${format(new Date(apt.date + 'T12:00:00'), 'dd/MM/yyyy')} às ${apt.time}`
+        });
+      }
+    } catch (err) {
+      console.error('Error deleting:', err);
+      alert('Erro ao excluir o agendamento.');
     }
     setActionLoading(null);
   }
@@ -256,18 +280,32 @@ export default function Appointments() {
                             </>
                           )}
                           {apt.status === 'cancelled' && (
-                            <button
-                              onClick={() => handleRestore(apt)}
-                              disabled={actionLoading === apt.id}
-                              className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
-                              title="Restaurar agendamento"
-                            >
-                              {actionLoading === apt.id ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <CheckCircle className="w-4 h-4" />
-                              )}
-                            </button>
+                            <>
+                              <button
+                                onClick={() => handleRestore(apt)}
+                                disabled={actionLoading === apt.id}
+                                className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                                title="Restaurar agendamento"
+                              >
+                                {actionLoading === apt.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <CheckCircle className="w-4 h-4" />
+                                )}
+                              </button>
+                              <button
+                                onClick={() => handleDelete(apt)}
+                                disabled={actionLoading === apt.id}
+                                className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                                title="Excluir agendamento permanentemente"
+                              >
+                                {actionLoading === apt.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-4 h-4" />
+                                )}
+                              </button>
+                            </>
                           )}
                         </div>
                       </td>
@@ -350,18 +388,32 @@ export default function Appointments() {
                       </>
                     )}
                     {apt.status === 'cancelled' && (
-                      <button
-                        onClick={() => handleRestore(apt)}
-                        disabled={actionLoading === apt.id}
-                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors cursor-pointer disabled:opacity-50"
-                      >
-                        {actionLoading === apt.id ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <CheckCircle className="w-3.5 h-3.5" />
-                        )}
-                        Restaurar
-                      </button>
+                      <>
+                        <button
+                          onClick={() => handleRestore(apt)}
+                          disabled={actionLoading === apt.id}
+                          className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors cursor-pointer disabled:opacity-50"
+                        >
+                          {actionLoading === apt.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <CheckCircle className="w-3.5 h-3.5" />
+                          )}
+                          Restaurar
+                        </button>
+                        <button
+                          onClick={() => handleDelete(apt)}
+                          disabled={actionLoading === apt.id}
+                          className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors cursor-pointer disabled:opacity-50"
+                        >
+                          {actionLoading === apt.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-3.5 h-3.5" />
+                          )}
+                          Excluir
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
