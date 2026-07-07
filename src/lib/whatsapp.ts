@@ -23,6 +23,7 @@ export function generateReminderLink(
     `na *Guarda Mirim de Mauá* está marcado para:\n\n` +
     `📅 *${formattedDate}*\n` +
     `🕐 *${time}h*\n\n` +
+    `Em nossa Sede - Rua Indaiatuba, 294 - Jd. Haydeé - Mauá - CEP - 09370-275\n\n` +
     `📋 *Caso não tenha enviado digitalmente, leve as cópias dos documentos:*\n` +
     `• Cópia do RG e CPF do responsável\n` +
     `• Cópia da certidão de nascimento da criança\n` +
