@@ -274,30 +274,63 @@ export default function ReciboGenerator() {
 
     setLoading(true);
 
+    // Ensure all custom fonts (Inter, Alex Brush, etc.) are fully loaded in the browser before capturing
+    try {
+      await document.fonts.ready;
+    } catch (fontsErr) {
+      console.warn("document.fonts.ready error:", fontsErr);
+    }
+
     // Force a small delay to guarantee that React has finished updating the DOM, styles, and text fields
     await new Promise((resolve) => setTimeout(resolve, 450));
     
+    // Save original styles to restore them immediately after the canvas is captured
+    const originalWidth = element.style.width;
+    const originalMinWidth = element.style.minWidth;
+    const originalMaxWidth = element.style.maxWidth;
+    const originalPosition = element.style.position;
+    const originalBoxShadow = element.style.boxShadow;
+
+    // Force the element to its full desktop width (1000px) so responsive breakpoints/media queries
+    // do not stack elements vertically on mobile/tablet viewport widths during capturing.
+    element.style.width = '1000px';
+    element.style.minWidth = '1000px';
+    element.style.maxWidth = '1000px';
+    element.style.position = 'relative';
+    element.style.boxShadow = 'none';
+
     // Attempt multiple canvas scales to handle potential canvas sizing limitations, especially on iOS/mobile browsers
     const scalesToTry = [2.0, 1.5, 1.0];
     let canvas: HTMLCanvasElement | null = null;
     let html2canvasError: any = null;
 
-    for (const currentScale of scalesToTry) {
-      try {
-        canvas = await html2canvas(element, {
-          scale: currentScale,
-          useCORS: true,
-          allowTaint: false, // Must be false to prevent SecurityError on toDataURL when using cross-origin images
-          backgroundColor: '#ffffff',
-          logging: true, // Enable logging to aid diagnostic tracing
-        });
-        if (canvas) {
-          break; // Succeeded!
+    try {
+      for (const currentScale of scalesToTry) {
+        try {
+          canvas = await html2canvas(element, {
+            scale: currentScale,
+            useCORS: true,
+            allowTaint: false, // Must be false to prevent SecurityError on toDataURL when using cross-origin images
+            backgroundColor: '#ffffff',
+            logging: true, // Enable logging to aid diagnostic tracing
+            windowWidth: 1200, // Forces html2canvas media query simulation to render the desktop layout
+            windowHeight: 800,
+          });
+          if (canvas) {
+            break; // Succeeded!
+          }
+        } catch (err) {
+          console.warn(`[html2canvas] Failed to render with scale ${currentScale}:`, err);
+          html2canvasError = err;
         }
-      } catch (err) {
-        console.warn(`[html2canvas] Failed to render with scale ${currentScale}:`, err);
-        html2canvasError = err;
       }
+    } finally {
+      // ALWAYS restore the original responsive styles immediately so the user's view remains perfectly responsive
+      element.style.width = originalWidth;
+      element.style.minWidth = originalMinWidth;
+      element.style.maxWidth = originalMaxWidth;
+      element.style.position = originalPosition;
+      element.style.boxShadow = originalBoxShadow;
     }
 
     if (!canvas) {
@@ -875,68 +908,63 @@ export default function ReciboGenerator() {
             >
               
               {/* Row 1: Receipt Number & Date */}
-              <div 
-                className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 pb-2"
-                style={{
-                  borderBottom: '1px dashed #e2e8f0'
-                }}
-              >
-                <div className="flex items-end gap-1 min-w-0">
-                  <span className="font-extrabold shrink-0 uppercase tracking-tight pb-[2px]" style={{ color: '#334155' }}>NÚMERO DO RECIBO:</span>
-                  <span className="font-black font-mono text-base tracking-tight px-1 pb-[2px] truncate" style={{ color: '#1e40af', borderBottom: '1px solid #0f172a' }}>
+              <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 border-b border-dashed border-slate-200 pb-2">
+                <div className="flex items-baseline gap-1 min-w-0">
+                  <span className="font-extrabold text-slate-800 shrink-0 uppercase tracking-tight">NÚMERO DO RECIBO:</span>
+                  <span className="font-black text-blue-800 font-mono text-base tracking-tight border-b border-slate-900 px-1 truncate">
                     {receiptNumber || 'GM-2026-___'}
                   </span>
                 </div>
-                <div className="flex items-end gap-1 shrink-0">
-                  <span className="font-bold italic text-sm pb-[2px]" style={{ color: '#1e293b' }}>
+                <div className="flex items-baseline gap-1 shrink-0">
+                  <span className="text-slate-800 font-bold italic text-sm">
                     Mauá, {formattedDateString || '____ de _____________ de ______'}.
                   </span>
                 </div>
               </div>
 
               {/* Row 2: RECEBI DE */}
-              <div className="flex items-end gap-2 pb-0.5">
-                <span className="font-extrabold shrink-0 uppercase tracking-tight pb-[3px]" style={{ color: '#334155' }}>RECEBI DE:</span>
-                <span className="flex-1 font-bold px-2 italic text-sm truncate pb-[3px]" style={{ color: '#0f172a', borderBottom: '1px solid rgba(148, 163, 184, 0.8)' }}>
+              <div className="flex items-baseline gap-2">
+                <span className="font-extrabold text-slate-800 shrink-0 uppercase tracking-tight">RECEBI DE:</span>
+                <span className="flex-1 font-bold text-slate-900 border-b border-slate-400/80 px-2 italic text-sm truncate">
                   {pagador || '__________________________________________________________________'}
                 </span>
               </div>
 
               {/* Row 3: CPF / RG & VALOR */}
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end pb-0.5">
-                <div className="md:col-span-7 flex items-end gap-2">
-                  <span className="font-extrabold shrink-0 uppercase tracking-tight pb-[3px]" style={{ color: '#334155' }}>CPF / RG:</span>
-                  <span className="flex-1 font-bold px-2 font-mono truncate pb-[3px]" style={{ color: '#0f172a', borderBottom: '1px solid rgba(148, 163, 184, 0.8)' }}>
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-baseline">
+                <div className="md:col-span-7 flex items-baseline gap-2">
+                  <span className="font-extrabold text-slate-800 shrink-0 uppercase tracking-tight">CPF / RG:</span>
+                  <span className="flex-1 font-bold text-slate-900 border-b border-slate-400/80 px-2 font-mono truncate">
                     {documentVal || '__________________________'}
                   </span>
                 </div>
-                <div className="md:col-span-5 flex items-end gap-2 md:justify-end">
-                  <span className="font-extrabold shrink-0 uppercase tracking-tight pb-[3px]" style={{ color: '#334155' }}>VALOR TOTAL:</span>
-                  <span className="font-black text-base px-3 pb-[3px] rounded" style={{ color: '#0f172a', borderBottom: '1px solid #0f172a', backgroundColor: '#f8fafc' }}>
+                <div className="md:col-span-5 flex items-baseline gap-2 md:justify-end">
+                  <span className="font-extrabold text-slate-800 shrink-0 uppercase tracking-tight">VALOR TOTAL:</span>
+                  <span className="font-black text-slate-900 text-base border-b border-slate-900 px-3 bg-slate-50 rounded">
                     R$ {valor > 0 ? valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'}
                   </span>
                 </div>
               </div>
 
               {/* Row 4: EXTENSO TEXT ONLY */}
-              <div className="flex items-end gap-2 pb-0.5">
-                <span className="flex-1 font-bold px-2 italic text-xs pb-[4px]" style={{ color: '#334155', borderBottom: '1px solid rgba(148, 163, 184, 0.8)' }}>
+              <div className="flex items-baseline gap-2">
+                <span className="flex-1 font-bold text-slate-800 border-b border-slate-400/80 px-2 italic text-xs">
                   {valor > 0 ? extensoText : '____________________________________________________________________'}
                 </span>
               </div>
 
               {/* Row 5: REFERENTE À */}
-              <div className="flex items-end gap-2 pb-0.5">
-                <span className="font-extrabold shrink-0 uppercase tracking-tight pb-[3px]" style={{ color: '#334155' }}>REFERENTE À:</span>
-                <span className="flex-1 font-bold px-2 italic text-sm truncate pb-[3px]" style={{ color: '#0f172a', borderBottom: '1px solid rgba(148, 163, 184, 0.8)' }}>
+              <div className="flex items-baseline gap-2">
+                <span className="font-extrabold text-slate-800 shrink-0 uppercase tracking-tight">REFERENTE À:</span>
+                <span className="flex-1 font-bold text-slate-900 border-b border-slate-400/80 px-2 italic text-sm truncate">
                   {referencia || '__________________________________________________________________'}
                 </span>
               </div>
 
               {/* Row 6: ALUNO */}
-              <div className="flex items-end gap-2 pb-0.5">
-                <span className="font-extrabold shrink-0 uppercase tracking-tight pb-[3px]" style={{ color: '#334155' }}>DO ALUNO (A):</span>
-                <span className="flex-1 font-bold px-2 text-sm truncate pb-[3px]" style={{ color: '#0f172a', borderBottom: '1px solid rgba(148, 163, 184, 0.8)' }}>
+              <div className="flex items-baseline gap-2">
+                <span className="font-extrabold text-slate-800 shrink-0 uppercase tracking-tight">DO ALUNO (A):</span>
+                <span className="flex-1 font-bold text-slate-900 border-b border-slate-400/80 px-2 text-sm truncate">
                   {aluno || '__________________________________________________________________'}
                 </span>
               </div>
