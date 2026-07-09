@@ -13,6 +13,7 @@ import Appointments from './pages/admin/Appointments';
 import Schedule from './pages/admin/Schedule';
 import Collaborators from './pages/admin/Collaborators';
 import AuditLogs from './pages/admin/AuditLogs';
+import ReciboGenerator from './pages/ReciboGenerator';
 
 export default function App() {
   return (
@@ -24,6 +25,9 @@ export default function App() {
             <Route path="/agendar" element={<Booking />} />
             <Route path="/confirmacao" element={<Confirmation />} />
           </Route>
+
+          {/* Digital Receipt Generator Page */}
+          <Route path="/recibo" element={<ReciboGenerator />} />
 
           {/* Root redirect to agendar */}
           <Route path="/" element={<Navigate to="/agendar" replace />} />

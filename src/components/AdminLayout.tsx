@@ -18,6 +18,7 @@ import {
   Upload,
   Trash2,
   Bell,
+  Receipt,
 } from 'lucide-react';
 
 const navItems = [
@@ -25,6 +26,7 @@ const navItems = [
   { path: '/admin/agendamentos', icon: ClipboardList, label: 'Agendamentos' },
   { path: '/admin/horarios', icon: CalendarCog, label: 'Horários' },
   { path: '/admin/colaboradores', icon: Users, label: 'Colaboradores' },
+  { path: '/recibo', icon: Receipt, label: 'Emitir Recibo' },
   { path: '/admin/logs', icon: ScrollText, label: 'Histórico / Logs' },
 ];
 
