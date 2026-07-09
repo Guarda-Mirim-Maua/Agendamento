@@ -758,9 +758,15 @@ export default function ReciboGenerator() {
           <div 
             id="receipt-print-container"
             ref={receiptRef}
-            className="print-area bg-white w-full max-w-[21cm] shadow-xl border border-slate-300 p-6 md:p-8 space-y-4 text-slate-900 select-none relative overflow-hidden"
+            className="print-area w-full max-w-[21cm] p-6 md:p-8 space-y-4 select-none relative overflow-hidden"
             style={{
-              fontFamily: "'Inter', sans-serif"
+              fontFamily: "'Inter', sans-serif",
+              backgroundColor: '#ffffff',
+              color: '#0f172a',
+              borderColor: '#cbd5e1',
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)'
             }}
           >
             {/* Header: Circular Logo and Entity Name */}
@@ -790,14 +796,14 @@ export default function ReciboGenerator() {
                     <circle cx="50" cy="50" r="41" fill="none" stroke="#003399" strokeWidth="1.5" />
                     
                     {/* Top curved text */}
-                    <text className="text-[5px] font-black fill-blue-900" dy="1.5">
+                    <text className="text-[5px] font-black" fill="#1e3a8a" dy="1.5">
                       <textPath href="#textCurveTop" startOffset="50%" textAnchor="middle">
                         CENTRO DE INTEGRAÇÃO INFANTO JUVENIL DE MAUÁ
                       </textPath>
                     </text>
                     
                     {/* Bottom curved text */}
-                    <text className="text-[5.5px] font-black fill-blue-900" dy="-1.5">
+                    <text className="text-[5.5px] font-black" fill="#1e3a8a" dy="-1.5">
                       <textPath href="#textCurveBottom" startOffset="50%" textAnchor="middle">
                         DEUS • PÁTRIA • FAMÍLIA
                       </textPath>
@@ -823,7 +829,15 @@ export default function ReciboGenerator() {
                   </svg>
 
                   {/* Date established label */}
-                  <div className="absolute top-[8px] bg-yellow-400 text-blue-950 text-[5px] font-black px-1 py-0.5 rounded shadow-sm scale-90 border border-blue-900">
+                  <div 
+                    className="absolute top-[8px] text-[5px] font-black px-1 py-0.5 rounded scale-90"
+                    style={{
+                      backgroundColor: '#facc15',
+                      color: '#172554',
+                      border: '1px solid #1e3a8a',
+                      boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+                    }}
+                  >
                     FUNDADA EM 30-04-62
                   </div>
                 </div>
@@ -831,25 +845,42 @@ export default function ReciboGenerator() {
             </div>
 
             {/* Gray Header Row: "RECIBO OFICIAL DE PAGAMENTO" */}
-            <div className="border border-slate-900 bg-neutral-100/85 py-2 px-4 text-center">
-              <h2 className="text-sm sm:text-base md:text-lg font-black text-slate-800 tracking-wider uppercase">
+            <div 
+              className="py-2 px-4 text-center"
+              style={{
+                border: '1px solid #0f172a',
+                backgroundColor: 'rgba(245, 245, 245, 0.85)',
+              }}
+            >
+              <h2 className="text-sm sm:text-base md:text-lg font-black tracking-wider uppercase" style={{ color: '#1e293b' }}>
                 RECIBO OFICIAL DE PAGAMENTO
               </h2>
             </div>
 
             {/* Receipt Box */}
-            <div className="border border-slate-900 p-4 sm:p-6 space-y-4 text-xs sm:text-sm bg-white relative z-10">
+            <div 
+              className="p-4 sm:p-6 space-y-4 text-xs sm:text-sm relative z-10"
+              style={{
+                border: '1px solid #0f172a',
+                backgroundColor: '#ffffff'
+              }}
+            >
               
               {/* Row 1: Receipt Number & Date */}
-              <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 border-b border-dashed border-slate-200 pb-2">
+              <div 
+                className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 pb-2"
+                style={{
+                  borderBottom: '1px dashed #e2e8f0'
+                }}
+              >
                 <div className="flex items-baseline gap-1 min-w-0">
-                  <span className="font-extrabold text-slate-800 shrink-0 uppercase tracking-tight">NÚMERO DO RECIBO:</span>
-                  <span className="font-black text-blue-800 font-mono text-base tracking-tight border-b border-slate-900 px-1 truncate">
+                  <span className="font-extrabold shrink-0 uppercase tracking-tight" style={{ color: '#334155' }}>NÚMERO DO RECIBO:</span>
+                  <span className="font-black font-mono text-base tracking-tight px-1 truncate" style={{ color: '#1e40af', borderBottom: '1px solid #0f172a' }}>
                     {receiptNumber || 'GM-2026-___'}
                   </span>
                 </div>
                 <div className="flex items-baseline gap-1 shrink-0">
-                  <span className="text-slate-800 font-bold italic text-sm">
+                  <span className="font-bold italic text-sm" style={{ color: '#1e293b' }}>
                     Mauá, {formattedDateString || '____ de _____________ de ______'}.
                   </span>
                 </div>
@@ -857,8 +888,8 @@ export default function ReciboGenerator() {
 
               {/* Row 2: RECEBI DE */}
               <div className="flex items-baseline gap-2">
-                <span className="font-extrabold text-slate-800 shrink-0 uppercase tracking-tight">RECEBI DE:</span>
-                <span className="flex-1 font-bold text-slate-900 border-b border-slate-400/80 px-2 italic text-sm truncate">
+                <span className="font-extrabold shrink-0 uppercase tracking-tight" style={{ color: '#334155' }}>RECEBI DE:</span>
+                <span className="flex-1 font-bold px-2 italic text-sm truncate" style={{ color: '#0f172a', borderBottom: '1px solid rgba(148, 163, 184, 0.8)' }}>
                   {pagador || '__________________________________________________________________'}
                 </span>
               </div>
@@ -866,14 +897,14 @@ export default function ReciboGenerator() {
               {/* Row 3: CPF / RG & VALOR */}
               <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-baseline">
                 <div className="md:col-span-7 flex items-baseline gap-2">
-                  <span className="font-extrabold text-slate-800 shrink-0 uppercase tracking-tight">CPF / RG:</span>
-                  <span className="flex-1 font-bold text-slate-900 border-b border-slate-400/80 px-2 font-mono truncate">
+                  <span className="font-extrabold shrink-0 uppercase tracking-tight" style={{ color: '#334155' }}>CPF / RG:</span>
+                  <span className="flex-1 font-bold px-2 font-mono truncate" style={{ color: '#0f172a', borderBottom: '1px solid rgba(148, 163, 184, 0.8)' }}>
                     {documentVal || '__________________________'}
                   </span>
                 </div>
                 <div className="md:col-span-5 flex items-baseline gap-2 md:justify-end">
-                  <span className="font-extrabold text-slate-800 shrink-0 uppercase tracking-tight">VALOR TOTAL:</span>
-                  <span className="font-black text-slate-900 text-base border-b border-slate-900 px-3 bg-slate-50 rounded">
+                  <span className="font-extrabold shrink-0 uppercase tracking-tight" style={{ color: '#334155' }}>VALOR TOTAL:</span>
+                  <span className="font-black text-base px-3 rounded" style={{ color: '#0f172a', borderBottom: '1px solid #0f172a', backgroundColor: '#f8fafc' }}>
                     R$ {valor > 0 ? valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'}
                   </span>
                 </div>
@@ -881,23 +912,23 @@ export default function ReciboGenerator() {
 
               {/* Row 4: EXTENSO TEXT ONLY */}
               <div className="flex items-baseline gap-2">
-                <span className="flex-1 font-bold text-slate-800 border-b border-slate-400/80 px-2 italic text-xs">
+                <span className="flex-1 font-bold px-2 italic text-xs" style={{ color: '#334155', borderBottom: '1px solid rgba(148, 163, 184, 0.8)' }}>
                   {valor > 0 ? extensoText : '____________________________________________________________________'}
                 </span>
               </div>
 
               {/* Row 5: REFERENTE À */}
               <div className="flex items-baseline gap-2">
-                <span className="font-extrabold text-slate-800 shrink-0 uppercase tracking-tight">REFERENTE À:</span>
-                <span className="flex-1 font-bold text-slate-900 border-b border-slate-400/80 px-2 italic text-sm truncate">
+                <span className="font-extrabold shrink-0 uppercase tracking-tight" style={{ color: '#334155' }}>REFERENTE À:</span>
+                <span className="flex-1 font-bold px-2 italic text-sm truncate" style={{ color: '#0f172a', borderBottom: '1px solid rgba(148, 163, 184, 0.8)' }}>
                   {referencia || '__________________________________________________________________'}
                 </span>
               </div>
 
               {/* Row 6: ALUNO */}
               <div className="flex items-baseline gap-2">
-                <span className="font-extrabold text-slate-800 shrink-0 uppercase tracking-tight">DO ALUNO (A):</span>
-                <span className="flex-1 font-bold text-slate-900 border-b border-slate-400/80 px-2 text-sm truncate">
+                <span className="font-extrabold shrink-0 uppercase tracking-tight" style={{ color: '#334155' }}>DO ALUNO (A):</span>
+                <span className="flex-1 font-bold px-2 text-sm truncate" style={{ color: '#0f172a', borderBottom: '1px solid rgba(148, 163, 184, 0.8)' }}>
                   {aluno || '__________________________________________________________________'}
                 </span>
               </div>
@@ -907,10 +938,10 @@ export default function ReciboGenerator() {
                 
                 {/* Left side: Issuer Entity details */}
                 <div className="md:col-span-7 space-y-1">
-                  <p className="text-[9px] sm:text-[10px] font-black text-slate-800 tracking-tight leading-tight uppercase">
+                  <p className="text-[9px] sm:text-[10px] font-black tracking-tight leading-tight uppercase" style={{ color: '#1e293b' }}>
                     ENTIDADE EMISSORA: CENTRO DE INTEGRAÇÃO INFANTO JUVENIL DE MAUÁ - GUARDA MIRIM
                   </p>
-                  <p className="text-[8px] sm:text-[9px] text-slate-500 font-medium leading-normal">
+                  <p className="text-[8px] sm:text-[9px] font-medium leading-normal" style={{ color: '#64748b' }}>
                     CNPJ: 50.136.704/0001-64 | Rua Indaiatuba, 294 – Jd. Haydeé - Centro, Mauá, SP
                   </p>
                 </div>
@@ -921,18 +952,18 @@ export default function ReciboGenerator() {
                   {showSignature && (
                     <div className="absolute top-[-36px] flex items-center justify-center select-none pointer-events-none transition-opacity">
                       <span 
-                        style={{ fontFamily: "'Alex Brush', cursive" }}
-                        className="text-[34px] text-purple-800 font-medium tracking-wider -rotate-3"
+                        style={{ fontFamily: "'Alex Brush', cursive", color: '#6b21a8' }}
+                        className="text-[34px] font-medium tracking-wider -rotate-3"
                       >
                         Sânderson
                       </span>
                     </div>
                   )}
-                  <div className="w-full border-t border-slate-800 mt-2 pt-1">
-                    <p className="text-[10px] font-black text-slate-800 leading-tight">
+                  <div className="w-full mt-2 pt-1" style={{ borderTop: '1px solid #1e293b' }}>
+                    <p className="text-[10px] font-black leading-tight" style={{ color: '#1e293b' }}>
                       SÂNDERSON CAIO LEITE DA SILVA
                     </p>
-                    <p className="text-[8px] font-extrabold text-slate-500 uppercase tracking-widest leading-none mt-0.5">
+                    <p className="text-[8px] font-extrabold uppercase tracking-widest leading-none mt-0.5" style={{ color: '#64748b' }}>
                       PRESIDENTE DA ENTIDADE
                     </p>
                   </div>
