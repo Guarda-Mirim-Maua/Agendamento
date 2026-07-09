@@ -1040,7 +1040,7 @@ export default function ReciboGenerator() {
                     <div className="absolute top-[-20px] flex items-center justify-center select-none pointer-events-none transition-opacity">
                       <span 
                         style={{ fontFamily: "'Alex Brush', cursive", color: '#6b21a8' }}
-                        className="text-[45px] font-medium tracking-wider -rotate-2"
+                        className="text-[40px] font-medium tracking-wider -rotate-2"
                       >
                         Sânderson
                       </span>
