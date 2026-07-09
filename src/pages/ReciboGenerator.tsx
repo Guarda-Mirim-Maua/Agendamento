@@ -422,9 +422,9 @@ export default function ReciboGenerator() {
         imgWidth = (canvas.width * imgHeight) / canvas.height;
       }
       
-      // Center the image horizontally and vertically
+      // Place the image at the top of the page horizontally centered
       const xOffset = (pageWidth - imgWidth) / 2;
-      const yOffset = (pageHeight - imgHeight) / 2;
+      const yOffset = 15; // Set to 15mm from the top of the A4 sheet
 
       pdf.addImage(imgData, 'PNG', xOffset, yOffset, imgWidth, imgHeight);
       
@@ -935,20 +935,20 @@ export default function ReciboGenerator() {
 
             {/* Gray Header Row: "RECIBO OFICIAL DE PAGAMENTO" */}
             <div 
-              className="py-2 px-4 text-center"
+              className="py-4 px-0 flex items-center justify-center text-center"
               style={{
                 border: '1px solid #0f172a',
                 backgroundColor: 'rgba(245, 245, 245, 0.85)',
               }}
             >
-              <h2 className="text-sm sm:text-base md:text-lg font-black tracking-wider uppercase" style={{ color: '#1e293b' }}>
+              <h2 className="text-lg sm:text-xl md:text-2xl font-black tracking-wider uppercase leading-none" style={{ color: '#1e293b' }}>
                 RECIBO OFICIAL DE PAGAMENTO
               </h2>
             </div>
 
             {/* Receipt Box */}
             <div 
-              className="p-4 sm:p-6 space-y-4 text-xs sm:text-sm relative z-10"
+              className="p-5 sm:p-7 space-y-5 text-sm sm:text-base relative z-10"
               style={{
                 border: '1px solid #0f172a',
                 backgroundColor: '#ffffff'
@@ -961,61 +961,61 @@ export default function ReciboGenerator() {
                 style={{ borderBottom: '1px dashed #cbd5e1' }}
               >
                 <div className="flex items-end gap-1 min-w-0">
-                  <span className="font-extrabold shrink-0 uppercase tracking-tight text-xs pb-[2px]" style={{ color: '#334155' }}>NÚMERO DO RECIBO:</span>
-                  <span className="font-black font-mono text-base tracking-tight px-1 pb-[2px] whitespace-nowrap overflow-visible" style={{ color: '#1e40af', borderBottom: '1px solid #0f172a' }}>
+                  <span className="font-extrabold shrink-0 uppercase tracking-tight text-sm pb-[2px]" style={{ color: '#334155' }}>NÚMERO DO RECIBO:</span>
+                  <span className="font-black font-mono text-lg tracking-tight px-1 pb-[5px] whitespace-nowrap overflow-visible" style={{ color: '#1e40af', borderBottom: '1px solid #0f172a' }}>
                     {receiptNumber || 'GM-2026-___'}
                   </span>
                 </div>
                 <div className="flex items-end gap-1 shrink-0 pb-[2px]">
-                  <span className="font-bold italic text-xs sm:text-sm" style={{ color: '#1e293b' }}>
+                  <span className="font-bold italic text-sm sm:text-base" style={{ color: '#1e293b' }}>
                     Mauá, {formattedDateString || '____ de _____________ de ______'}.
                   </span>
                 </div>
               </div>
 
               {/* Row 2: RECEBI DE */}
-              <div className="flex items-end gap-2 min-h-[32px]">
-                <span className="font-extrabold shrink-0 uppercase tracking-tight text-xs pb-[4px]" style={{ color: '#334155' }}>RECEBI DE:</span>
-                <span className="flex-1 font-bold px-2 pb-[2px] italic text-sm whitespace-nowrap overflow-visible" style={{ color: '#0f172a', borderBottom: '1px solid #94a3b8' }}>
+              <div className="flex items-end gap-2 min-h-[36px]">
+                <span className="font-extrabold shrink-0 uppercase tracking-tight text-sm pb-[4px]" style={{ color: '#334155' }}>RECEBI DE:</span>
+                <span className="flex-1 font-bold px-2 pb-[5px] italic text-base whitespace-nowrap overflow-visible" style={{ color: '#0f172a', borderBottom: '1px solid #94a3b8' }}>
                   {pagador || '__________________________________________________________________'}
                 </span>
               </div>
 
               {/* Row 3: CPF / RG & VALOR */}
               <div className="grid grid-cols-12 gap-3 items-end">
-                <div className="col-span-7 flex items-end gap-2 min-h-[32px]">
-                  <span className="font-extrabold shrink-0 uppercase tracking-tight text-xs pb-[4px]" style={{ color: '#334155' }}>CPF / RG:</span>
-                  <span className="flex-1 font-bold px-2 pb-[2px] font-mono whitespace-nowrap overflow-visible" style={{ color: '#0f172a', borderBottom: '1px solid #94a3b8' }}>
+                <div className="col-span-7 flex items-end gap-2 min-h-[36px]">
+                  <span className="font-extrabold shrink-0 uppercase tracking-tight text-sm pb-[4px]" style={{ color: '#334155' }}>CPF / RG:</span>
+                  <span className="flex-1 font-bold px-2 pb-[5px] font-mono text-base whitespace-nowrap overflow-visible" style={{ color: '#0f172a', borderBottom: '1px solid #94a3b8' }}>
                     {documentVal || '__________________________'}
                   </span>
                 </div>
-                <div className="col-span-5 flex items-end gap-2 justify-end min-h-[32px]">
-                  <span className="font-extrabold shrink-0 uppercase tracking-tight text-xs pb-[5px]" style={{ color: '#334155' }}>VALOR TOTAL:</span>
-                  <span className="font-black text-base px-3 pb-[2px] rounded" style={{ color: '#0f172a', borderBottom: '1px solid #0f172a', backgroundColor: '#f8fafc' }}>
+                <div className="col-span-5 flex items-end gap-2 justify-end min-h-[36px]">
+                  <span className="font-extrabold shrink-0 uppercase tracking-tight text-sm pb-[5px]" style={{ color: '#334155' }}>VALOR TOTAL:</span>
+                  <span className="font-black text-lg px-3 pb-[5px] rounded" style={{ color: '#0f172a', borderBottom: '1px solid #0f172a', backgroundColor: '#f8fafc' }}>
                     R$ {valor > 0 ? valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'}
                   </span>
                 </div>
               </div>
 
               {/* Row 4: EXTENSO TEXT ONLY */}
-              <div className="flex items-end gap-2 min-h-[24px]">
-                <span className="flex-1 font-bold px-2 pb-[2px] italic text-xs whitespace-nowrap overflow-visible" style={{ color: '#334155', borderBottom: '1px solid #94a3b8' }}>
+              <div className="flex items-end gap-2 min-h-[28px]">
+                <span className="flex-1 font-bold px-2 pb-[5px] italic text-sm whitespace-nowrap overflow-visible" style={{ color: '#334155', borderBottom: '1px solid #94a3b8' }}>
                   {valor > 0 ? extensoText : '____________________________________________________________________'}
                 </span>
               </div>
 
               {/* Row 5: REFERENTE À */}
-              <div className="flex items-end gap-2 min-h-[32px]">
-                <span className="font-extrabold shrink-0 uppercase tracking-tight text-xs pb-[4px]" style={{ color: '#334155' }}>REFERENTE À:</span>
-                <span className="flex-1 font-bold px-2 pb-[2px] italic text-sm whitespace-nowrap overflow-visible" style={{ color: '#0f172a', borderBottom: '1px solid #94a3b8' }}>
+              <div className="flex items-end gap-2 min-h-[36px]">
+                <span className="font-extrabold shrink-0 uppercase tracking-tight text-sm pb-[4px]" style={{ color: '#334155' }}>REFERENTE À:</span>
+                <span className="flex-1 font-bold px-2 pb-[5px] italic text-base whitespace-nowrap overflow-visible" style={{ color: '#0f172a', borderBottom: '1px solid #94a3b8' }}>
                   {referencia || '__________________________________________________________________'}
                 </span>
               </div>
 
               {/* Row 6: ALUNO */}
-              <div className="flex items-end gap-2 min-h-[32px]">
-                <span className="font-extrabold shrink-0 uppercase tracking-tight text-xs pb-[4px]" style={{ color: '#334155' }}>DO ALUNO (A):</span>
-                <span className="flex-1 font-bold px-2 pb-[2px] text-sm whitespace-nowrap overflow-visible" style={{ color: '#0f172a', borderBottom: '1px solid #94a3b8' }}>
+              <div className="flex items-end gap-2 min-h-[36px]">
+                <span className="font-extrabold shrink-0 uppercase tracking-tight text-sm pb-[4px]" style={{ color: '#334155' }}>DO ALUNO (A):</span>
+                <span className="flex-1 font-bold px-2 pb-[5px] text-base whitespace-nowrap overflow-visible" style={{ color: '#0f172a', borderBottom: '1px solid #94a3b8' }}>
                   {aluno || '__________________________________________________________________'}
                 </span>
               </div>
@@ -1024,33 +1024,33 @@ export default function ReciboGenerator() {
               <div className="pt-4 grid grid-cols-12 gap-4 items-end">
                 
                 {/* Left side: Issuer Entity details */}
-                <div className="col-span-7 space-y-1">
-                  <p className="text-[10px] font-black tracking-tight leading-tight uppercase" style={{ color: '#1e293b' }}>
+                <div className="col-span-7 space-y-1.5">
+                  <p className="text-xs font-black tracking-tight leading-tight uppercase" style={{ color: '#1e293b' }}>
                     ENTIDADE EMISSORA: CENTRO DE INTEGRAÇÃO INFANTO JUVENIL DE MAUÁ - GUARDA MIRIM
                   </p>
-                  <p className="text-[9px] font-medium leading-normal" style={{ color: '#64748b' }}>
+                  <p className="text-[10px] font-semibold leading-normal" style={{ color: '#64748b' }}>
                     CNPJ: 50.136.704/0001-64 | Rua Indaiatuba, 294 – Jd. Haydeé - Centro, Mauá, SP
                   </p>
                 </div>
 
                 {/* Right side: Signature Zone */}
                 <div className="col-span-5 flex flex-col items-center text-center relative pt-4 md:pt-0">
-                  {/* Cursive Handwriting Signature "Sânderson" */}
+                  {/* Cursive Handwriting Signature "Sânderson" - raised above the line */}
                   {showSignature && (
-                    <div className="absolute top-[-36px] flex items-center justify-center select-none pointer-events-none transition-opacity">
+                    <div className="absolute top-[-45px] flex items-center justify-center select-none pointer-events-none transition-opacity">
                       <span 
                         style={{ fontFamily: "'Alex Brush', cursive", color: '#6b21a8' }}
-                        className="text-[34px] font-medium tracking-wider -rotate-3"
+                        className="text-[42px] font-medium tracking-wider -rotate-2"
                       >
                         Sânderson
                       </span>
                     </div>
                   )}
                   <div className="w-full mt-2 pt-1" style={{ borderTop: '1px solid #1e293b' }}>
-                    <p className="text-[10px] font-black leading-tight" style={{ color: '#1e293b' }}>
+                    <p className="text-xs font-black leading-tight" style={{ color: '#1e293b' }}>
                       SÂNDERSON CAIO LEITE DA SILVA
                     </p>
-                    <p className="text-[8px] font-extrabold uppercase tracking-widest leading-none mt-0.5" style={{ color: '#64748b' }}>
+                    <p className="text-[9px] font-extrabold uppercase tracking-widest leading-none mt-1" style={{ color: '#64748b' }}>
                       PRESIDENTE DA ENTIDADE
                     </p>
                   </div>
