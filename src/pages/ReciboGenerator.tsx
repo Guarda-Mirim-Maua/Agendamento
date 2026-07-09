@@ -248,15 +248,38 @@ export default function ReciboGenerator() {
     if (!element) return null;
 
     setLoading(true);
-    try {
-      // Temporarily add a printing-specific class or styling for cleaner canvas render
-      const canvas = await html2canvas(element, {
-        scale: 2.5, // Ultra-high resolution
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-      });
+    
+    // Attempt multiple canvas scales to handle potential canvas sizing limitations, especially on iOS/mobile browsers
+    const scalesToTry = [2.0, 1.5, 1.0];
+    let canvas: HTMLCanvasElement | null = null;
+    let lastError: any = null;
 
+    for (const currentScale of scalesToTry) {
+      try {
+        canvas = await html2canvas(element, {
+          scale: currentScale,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+          logging: false,
+        });
+        if (canvas) {
+          break; // Succeeded!
+        }
+      } catch (err) {
+        console.warn(`html2canvas failed to render with scale ${currentScale}:`, err);
+        lastError = err;
+      }
+    }
+
+    if (!canvas) {
+      console.error('All html2canvas render attempts failed:', lastError);
+      alert('Erro ao gerar a imagem do recibo. Por favor, tente novamente ou use a opção de "Imprimir A4".');
+      setLoading(false);
+      return null;
+    }
+
+    try {
       const imgData = canvas.toDataURL('image/png');
       
       // Receipt has landscape-like aspect ratio, so we configure landscape orientation
@@ -280,7 +303,7 @@ export default function ReciboGenerator() {
       return { blob, filename };
     } catch (error) {
       console.error('Error generating PDF:', error);
-      alert('Erro ao gerar o PDF do recibo. Tente novamente.');
+      alert('Erro ao processar o PDF do recibo. Tente novamente.');
       return null;
     } finally {
       setLoading(false);
