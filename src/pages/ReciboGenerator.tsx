@@ -1037,10 +1037,10 @@ export default function ReciboGenerator() {
                 <div className="col-span-5 flex flex-col items-center text-center relative pt-4 md:pt-0">
                   {/* Cursive Handwriting Signature "Sânderson" - raised above the line */}
                   {showSignature && (
-                    <div className="absolute top-[-45px] flex items-center justify-center select-none pointer-events-none transition-opacity">
+                    <div className="absolute top-[-30px] flex items-center justify-center select-none pointer-events-none transition-opacity">
                       <span 
                         style={{ fontFamily: "'Alex Brush', cursive", color: '#6b21a8' }}
-                        className="text-[35px] font-medium tracking-wider -rotate-2"
+                        className="text-[45px] font-medium tracking-wider -rotate-2"
                       >
                         Sânderson
                       </span>
