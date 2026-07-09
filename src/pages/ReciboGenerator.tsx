@@ -876,67 +876,67 @@ export default function ReciboGenerator() {
               
               {/* Row 1: Receipt Number & Date */}
               <div 
-                className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 pb-2"
+                className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 pb-2"
                 style={{
                   borderBottom: '1px dashed #e2e8f0'
                 }}
               >
-                <div className="flex items-baseline gap-1 min-w-0">
-                  <span className="font-extrabold shrink-0 uppercase tracking-tight" style={{ color: '#334155' }}>NÚMERO DO RECIBO:</span>
-                  <span className="font-black font-mono text-base tracking-tight px-1 truncate" style={{ color: '#1e40af', borderBottom: '1px solid #0f172a' }}>
+                <div className="flex items-end gap-1 min-w-0">
+                  <span className="font-extrabold shrink-0 uppercase tracking-tight pb-[2px]" style={{ color: '#334155' }}>NÚMERO DO RECIBO:</span>
+                  <span className="font-black font-mono text-base tracking-tight px-1 pb-[2px] truncate" style={{ color: '#1e40af', borderBottom: '1px solid #0f172a' }}>
                     {receiptNumber || 'GM-2026-___'}
                   </span>
                 </div>
-                <div className="flex items-baseline gap-1 shrink-0">
-                  <span className="font-bold italic text-sm" style={{ color: '#1e293b' }}>
+                <div className="flex items-end gap-1 shrink-0">
+                  <span className="font-bold italic text-sm pb-[2px]" style={{ color: '#1e293b' }}>
                     Mauá, {formattedDateString || '____ de _____________ de ______'}.
                   </span>
                 </div>
               </div>
 
               {/* Row 2: RECEBI DE */}
-              <div className="flex items-baseline gap-2">
-                <span className="font-extrabold shrink-0 uppercase tracking-tight" style={{ color: '#334155' }}>RECEBI DE:</span>
-                <span className="flex-1 font-bold px-2 italic text-sm truncate" style={{ color: '#0f172a', borderBottom: '1px solid rgba(148, 163, 184, 0.8)' }}>
+              <div className="flex items-end gap-2 pb-0.5">
+                <span className="font-extrabold shrink-0 uppercase tracking-tight pb-[3px]" style={{ color: '#334155' }}>RECEBI DE:</span>
+                <span className="flex-1 font-bold px-2 italic text-sm truncate pb-[3px]" style={{ color: '#0f172a', borderBottom: '1px solid rgba(148, 163, 184, 0.8)' }}>
                   {pagador || '__________________________________________________________________'}
                 </span>
               </div>
 
               {/* Row 3: CPF / RG & VALOR */}
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-baseline">
-                <div className="md:col-span-7 flex items-baseline gap-2">
-                  <span className="font-extrabold shrink-0 uppercase tracking-tight" style={{ color: '#334155' }}>CPF / RG:</span>
-                  <span className="flex-1 font-bold px-2 font-mono truncate" style={{ color: '#0f172a', borderBottom: '1px solid rgba(148, 163, 184, 0.8)' }}>
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end pb-0.5">
+                <div className="md:col-span-7 flex items-end gap-2">
+                  <span className="font-extrabold shrink-0 uppercase tracking-tight pb-[3px]" style={{ color: '#334155' }}>CPF / RG:</span>
+                  <span className="flex-1 font-bold px-2 font-mono truncate pb-[3px]" style={{ color: '#0f172a', borderBottom: '1px solid rgba(148, 163, 184, 0.8)' }}>
                     {documentVal || '__________________________'}
                   </span>
                 </div>
-                <div className="md:col-span-5 flex items-baseline gap-2 md:justify-end">
-                  <span className="font-extrabold shrink-0 uppercase tracking-tight" style={{ color: '#334155' }}>VALOR TOTAL:</span>
-                  <span className="font-black text-base px-3 rounded" style={{ color: '#0f172a', borderBottom: '1px solid #0f172a', backgroundColor: '#f8fafc' }}>
+                <div className="md:col-span-5 flex items-end gap-2 md:justify-end">
+                  <span className="font-extrabold shrink-0 uppercase tracking-tight pb-[3px]" style={{ color: '#334155' }}>VALOR TOTAL:</span>
+                  <span className="font-black text-base px-3 pb-[3px] rounded" style={{ color: '#0f172a', borderBottom: '1px solid #0f172a', backgroundColor: '#f8fafc' }}>
                     R$ {valor > 0 ? valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'}
                   </span>
                 </div>
               </div>
 
               {/* Row 4: EXTENSO TEXT ONLY */}
-              <div className="flex items-baseline gap-2">
-                <span className="flex-1 font-bold px-2 italic text-xs" style={{ color: '#334155', borderBottom: '1px solid rgba(148, 163, 184, 0.8)' }}>
+              <div className="flex items-end gap-2 pb-0.5">
+                <span className="flex-1 font-bold px-2 italic text-xs pb-[4px]" style={{ color: '#334155', borderBottom: '1px solid rgba(148, 163, 184, 0.8)' }}>
                   {valor > 0 ? extensoText : '____________________________________________________________________'}
                 </span>
               </div>
 
               {/* Row 5: REFERENTE À */}
-              <div className="flex items-baseline gap-2">
-                <span className="font-extrabold shrink-0 uppercase tracking-tight" style={{ color: '#334155' }}>REFERENTE À:</span>
-                <span className="flex-1 font-bold px-2 italic text-sm truncate" style={{ color: '#0f172a', borderBottom: '1px solid rgba(148, 163, 184, 0.8)' }}>
+              <div className="flex items-end gap-2 pb-0.5">
+                <span className="font-extrabold shrink-0 uppercase tracking-tight pb-[3px]" style={{ color: '#334155' }}>REFERENTE À:</span>
+                <span className="flex-1 font-bold px-2 italic text-sm truncate pb-[3px]" style={{ color: '#0f172a', borderBottom: '1px solid rgba(148, 163, 184, 0.8)' }}>
                   {referencia || '__________________________________________________________________'}
                 </span>
               </div>
 
               {/* Row 6: ALUNO */}
-              <div className="flex items-baseline gap-2">
-                <span className="font-extrabold shrink-0 uppercase tracking-tight" style={{ color: '#334155' }}>DO ALUNO (A):</span>
-                <span className="flex-1 font-bold px-2 text-sm truncate" style={{ color: '#0f172a', borderBottom: '1px solid rgba(148, 163, 184, 0.8)' }}>
+              <div className="flex items-end gap-2 pb-0.5">
+                <span className="font-extrabold shrink-0 uppercase tracking-tight pb-[3px]" style={{ color: '#334155' }}>DO ALUNO (A):</span>
+                <span className="flex-1 font-bold px-2 text-sm truncate pb-[3px]" style={{ color: '#0f172a', borderBottom: '1px solid rgba(148, 163, 184, 0.8)' }}>
                   {aluno || '__________________________________________________________________'}
                 </span>
               </div>
