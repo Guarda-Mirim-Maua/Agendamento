@@ -134,6 +134,31 @@ export default function ReciboGenerator() {
   const [showSignature, setShowSignature] = useState(true);
   const [savedReceipts, setSavedReceipts] = useState<SavedReceipt[]>([]);
   const [toast, setToast] = useState<string | null>(null);
+  const [logoBase64, setLogoBase64] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!logo) {
+      setLogoBase64(null);
+      return;
+    }
+
+    const convertLogoToBase64 = async () => {
+      try {
+        const response = await fetch(logo, { mode: 'cors' });
+        const blob = await response.blob();
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setLogoBase64(reader.result as string);
+        };
+        reader.readAsDataURL(blob);
+      } catch (err) {
+        console.warn("Failed to pre-fetch logo with CORS, falling back to original URL:", err);
+        setLogoBase64(logo);
+      }
+    };
+
+    convertLogoToBase64();
+  }, [logo]);
 
   // Load history & set auto-incrementing receipt number on mount
   useEffect(() => {
@@ -248,40 +273,51 @@ export default function ReciboGenerator() {
     if (!element) return null;
 
     setLoading(true);
+
+    // Force a small delay to guarantee that React has finished updating the DOM, styles, and text fields
+    await new Promise((resolve) => setTimeout(resolve, 450));
     
     // Attempt multiple canvas scales to handle potential canvas sizing limitations, especially on iOS/mobile browsers
     const scalesToTry = [2.0, 1.5, 1.0];
     let canvas: HTMLCanvasElement | null = null;
-    let lastError: any = null;
+    let html2canvasError: any = null;
 
     for (const currentScale of scalesToTry) {
       try {
         canvas = await html2canvas(element, {
           scale: currentScale,
           useCORS: true,
-          allowTaint: true,
+          allowTaint: false, // Must be false to prevent SecurityError on toDataURL when using cross-origin images
           backgroundColor: '#ffffff',
-          logging: false,
+          logging: true, // Enable logging to aid diagnostic tracing
         });
         if (canvas) {
           break; // Succeeded!
         }
       } catch (err) {
-        console.warn(`html2canvas failed to render with scale ${currentScale}:`, err);
-        lastError = err;
+        console.warn(`[html2canvas] Failed to render with scale ${currentScale}:`, err);
+        html2canvasError = err;
       }
     }
 
     if (!canvas) {
-      console.error('All html2canvas render attempts failed:', lastError);
-      alert('Erro ao gerar a imagem do recibo. Por favor, tente novamente ou use a opção de "Imprimir A4".');
+      console.error('[html2canvas] All canvas render attempts failed:', html2canvasError);
+      alert(`Erro na captura da imagem do recibo (html2canvas): ${html2canvasError?.message || html2canvasError || 'Erro de renderização'}`);
       setLoading(false);
       return null;
     }
 
+    // Convert Canvas to PNG image data & generate jsPDF Document
     try {
-      const imgData = canvas.toDataURL('image/png');
-      
+      let imgData = "";
+      try {
+        imgData = canvas.toDataURL('image/png');
+      } catch (taintErr: any) {
+        console.error('[canvas.toDataURL] Failed to extract image data (typically canvas taint due to CORS):', taintErr);
+        alert(`Erro de segurança do Canvas (CORS/Taint): ${taintErr?.message || taintErr || 'Erro desconhecido'}. Por favor, certifique-se de que o logo está acessível e possui as permissões CORS corretas.`);
+        return null;
+      }
+
       // Receipt has landscape-like aspect ratio, so we configure landscape orientation
       const pdf = new jsPDF({
         orientation: 'landscape',
@@ -301,9 +337,9 @@ export default function ReciboGenerator() {
       const blob = pdf.output('blob');
       
       return { blob, filename };
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      alert('Erro ao processar o PDF do recibo. Tente novamente.');
+    } catch (error: any) {
+      console.error('[jsPDF] Error creating PDF layout:', error);
+      alert(`Erro ao criar o arquivo PDF (jsPDF): ${error?.message || error || 'Erro de montagem'}`);
       return null;
     } finally {
       setLoading(false);
@@ -333,8 +369,12 @@ export default function ReciboGenerator() {
     // Save to local history list
     handleSaveToHistory();
 
-    // Generate the PDF
+    // Generate the PDF - ensure this is successful before continuing
     const pdfResult = await generatePDFBlob();
+    if (!pdfResult) {
+      triggerToast("Não foi possível gerar o PDF. Operação cancelada.");
+      return;
+    }
 
     // Elegant text message with markdown (excluding misleading auto-download message)
     const message = `Prezado(a) responsável, segue o recibo oficial digital da *Guarda Mirim de Mauá*.\n\n` +
@@ -345,7 +385,7 @@ export default function ReciboGenerator() {
       `• *Referente a:* ${referencia}`;
 
     // Try sharing the actual PDF file directly (highly functional on mobile/tablets)
-    if (pdfResult && navigator.share && navigator.canShare) {
+    if (navigator.share && navigator.canShare) {
       try {
         const file = new File([pdfResult.blob], pdfResult.filename, { type: 'application/pdf' });
         if (navigator.canShare({ files: [file] })) {
@@ -729,9 +769,10 @@ export default function ReciboGenerator() {
               {logo ? (
                 <div className="w-32 h-32 sm:w-36 sm:h-36 flex items-center justify-center overflow-hidden mb-1.5">
                   <img 
-                    src={logo} 
+                    src={logoBase64 || logo} 
                     alt="Logo Guarda Mirim" 
                     className="w-full h-full object-contain" 
+                    crossOrigin="anonymous"
                     referrerPolicy="no-referrer"
                   />
                 </div>
