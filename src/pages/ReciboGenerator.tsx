@@ -318,20 +318,34 @@ export default function ReciboGenerator() {
         return null;
       }
 
-      // Receipt has landscape-like aspect ratio, so we configure landscape orientation
+      // Configure PDF as A4 in Portrait orientation
       const pdf = new jsPDF({
-        orientation: 'landscape',
+        orientation: 'portrait',
         unit: 'mm',
         format: 'a4',
       });
 
-      const imgWidth = 277; // A4 landscape width is 297mm (10mm margin left/right)
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const margin = 10;
       
-      // Center vertically on the page
-      const yOffset = (210 - imgHeight) / 2;
+      const maxImgWidth = pageWidth - (margin * 2); // 190mm
+      const maxImgHeight = pageHeight - (margin * 2); // 277mm
+      
+      let imgWidth = maxImgWidth;
+      let imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // If the calculated height is taller than available page height, scale down based on height
+      if (imgHeight > maxImgHeight) {
+        imgHeight = maxImgHeight;
+        imgWidth = (canvas.width * imgHeight) / canvas.height;
+      }
+      
+      // Center the image horizontally and vertically
+      const xOffset = (pageWidth - imgWidth) / 2;
+      const yOffset = (pageHeight - imgHeight) / 2;
 
-      pdf.addImage(imgData, 'PNG', 10, Math.max(10, yOffset), imgWidth, imgHeight);
+      pdf.addImage(imgData, 'PNG', xOffset, yOffset, imgWidth, imgHeight);
       
       const filename = `recibo-${receiptNumber || 'GMM'}.pdf`;
       const blob = pdf.output('blob');
