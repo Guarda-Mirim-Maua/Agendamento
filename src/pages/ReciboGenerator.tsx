@@ -291,11 +291,11 @@ export default function ReciboGenerator() {
     const originalPosition = element.style.position;
     const originalBoxShadow = element.style.boxShadow;
 
-    // Force the element to its full desktop width (1000px) so responsive breakpoints/media queries
+    // Force the element to its full desktop width (794px, matching exactly 21cm at 96 DPI) so responsive breakpoints
     // do not stack elements vertically on mobile/tablet viewport widths during capturing.
-    element.style.width = '1000px';
-    element.style.minWidth = '1000px';
-    element.style.maxWidth = '1000px';
+    element.style.width = '794px';
+    element.style.minWidth = '794px';
+    element.style.maxWidth = '794px';
     element.style.position = 'relative';
     element.style.boxShadow = 'none';
 
@@ -908,15 +908,18 @@ export default function ReciboGenerator() {
             >
               
               {/* Row 1: Receipt Number & Date */}
-              <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 border-b border-dashed border-slate-200 pb-2">
+              <div 
+                className="flex flex-row items-baseline justify-between gap-2 pb-2"
+                style={{ borderBottom: '1px dashed #cbd5e1' }}
+              >
                 <div className="flex items-baseline gap-1 min-w-0">
-                  <span className="font-extrabold text-slate-800 shrink-0 uppercase tracking-tight">NÚMERO DO RECIBO:</span>
-                  <span className="font-black text-blue-800 font-mono text-base tracking-tight border-b border-slate-900 px-1 truncate">
+                  <span className="font-extrabold shrink-0 uppercase tracking-tight text-xs" style={{ color: '#334155' }}>NÚMERO DO RECIBO:</span>
+                  <span className="font-black font-mono text-base tracking-tight px-1 truncate" style={{ color: '#1e40af', borderBottom: '1px solid #0f172a' }}>
                     {receiptNumber || 'GM-2026-___'}
                   </span>
                 </div>
                 <div className="flex items-baseline gap-1 shrink-0">
-                  <span className="text-slate-800 font-bold italic text-sm">
+                  <span className="font-bold italic text-xs sm:text-sm" style={{ color: '#1e293b' }}>
                     Mauá, {formattedDateString || '____ de _____________ de ______'}.
                   </span>
                 </div>
@@ -924,23 +927,23 @@ export default function ReciboGenerator() {
 
               {/* Row 2: RECEBI DE */}
               <div className="flex items-baseline gap-2">
-                <span className="font-extrabold text-slate-800 shrink-0 uppercase tracking-tight">RECEBI DE:</span>
-                <span className="flex-1 font-bold text-slate-900 border-b border-slate-400/80 px-2 italic text-sm truncate">
+                <span className="font-extrabold shrink-0 uppercase tracking-tight text-xs" style={{ color: '#334155' }}>RECEBI DE:</span>
+                <span className="flex-1 font-bold px-2 italic text-sm truncate" style={{ color: '#0f172a', borderBottom: '1px solid #94a3b8' }}>
                   {pagador || '__________________________________________________________________'}
                 </span>
               </div>
 
               {/* Row 3: CPF / RG & VALOR */}
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-baseline">
-                <div className="md:col-span-7 flex items-baseline gap-2">
-                  <span className="font-extrabold text-slate-800 shrink-0 uppercase tracking-tight">CPF / RG:</span>
-                  <span className="flex-1 font-bold text-slate-900 border-b border-slate-400/80 px-2 font-mono truncate">
+              <div className="grid grid-cols-12 gap-3 items-baseline">
+                <div className="col-span-7 flex items-baseline gap-2">
+                  <span className="font-extrabold shrink-0 uppercase tracking-tight text-xs" style={{ color: '#334155' }}>CPF / RG:</span>
+                  <span className="flex-1 font-bold px-2 font-mono truncate" style={{ color: '#0f172a', borderBottom: '1px solid #94a3b8' }}>
                     {documentVal || '__________________________'}
                   </span>
                 </div>
-                <div className="md:col-span-5 flex items-baseline gap-2 md:justify-end">
-                  <span className="font-extrabold text-slate-800 shrink-0 uppercase tracking-tight">VALOR TOTAL:</span>
-                  <span className="font-black text-slate-900 text-base border-b border-slate-900 px-3 bg-slate-50 rounded">
+                <div className="col-span-5 flex items-baseline gap-2 justify-end">
+                  <span className="font-extrabold shrink-0 uppercase tracking-tight text-xs" style={{ color: '#334155' }}>VALOR TOTAL:</span>
+                  <span className="font-black text-base px-3 rounded" style={{ color: '#0f172a', borderBottom: '1px solid #0f172a', backgroundColor: '#f8fafc' }}>
                     R$ {valor > 0 ? valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'}
                   </span>
                 </div>
@@ -948,42 +951,42 @@ export default function ReciboGenerator() {
 
               {/* Row 4: EXTENSO TEXT ONLY */}
               <div className="flex items-baseline gap-2">
-                <span className="flex-1 font-bold text-slate-800 border-b border-slate-400/80 px-2 italic text-xs">
+                <span className="flex-1 font-bold px-2 italic text-xs" style={{ color: '#334155', borderBottom: '1px solid #94a3b8' }}>
                   {valor > 0 ? extensoText : '____________________________________________________________________'}
                 </span>
               </div>
 
               {/* Row 5: REFERENTE À */}
               <div className="flex items-baseline gap-2">
-                <span className="font-extrabold text-slate-800 shrink-0 uppercase tracking-tight">REFERENTE À:</span>
-                <span className="flex-1 font-bold text-slate-900 border-b border-slate-400/80 px-2 italic text-sm truncate">
+                <span className="font-extrabold shrink-0 uppercase tracking-tight text-xs" style={{ color: '#334155' }}>REFERENTE À:</span>
+                <span className="flex-1 font-bold px-2 italic text-sm truncate" style={{ color: '#0f172a', borderBottom: '1px solid #94a3b8' }}>
                   {referencia || '__________________________________________________________________'}
                 </span>
               </div>
 
               {/* Row 6: ALUNO */}
               <div className="flex items-baseline gap-2">
-                <span className="font-extrabold text-slate-800 shrink-0 uppercase tracking-tight">DO ALUNO (A):</span>
-                <span className="flex-1 font-bold text-slate-900 border-b border-slate-400/80 px-2 text-sm truncate">
+                <span className="font-extrabold shrink-0 uppercase tracking-tight text-xs" style={{ color: '#334155' }}>DO ALUNO (A):</span>
+                <span className="flex-1 font-bold px-2 text-sm truncate" style={{ color: '#0f172a', borderBottom: '1px solid #94a3b8' }}>
                   {aluno || '__________________________________________________________________'}
                 </span>
               </div>
 
               {/* Row 8: FOOTER DETAILS & SIGNATURE */}
-              <div className="pt-4 grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+              <div className="pt-4 grid grid-cols-12 gap-4 items-end">
                 
                 {/* Left side: Issuer Entity details */}
-                <div className="md:col-span-7 space-y-1">
-                  <p className="text-[9px] sm:text-[10px] font-black tracking-tight leading-tight uppercase" style={{ color: '#1e293b' }}>
+                <div className="col-span-7 space-y-1">
+                  <p className="text-[10px] font-black tracking-tight leading-tight uppercase" style={{ color: '#1e293b' }}>
                     ENTIDADE EMISSORA: CENTRO DE INTEGRAÇÃO INFANTO JUVENIL DE MAUÁ - GUARDA MIRIM
                   </p>
-                  <p className="text-[8px] sm:text-[9px] font-medium leading-normal" style={{ color: '#64748b' }}>
+                  <p className="text-[9px] font-medium leading-normal" style={{ color: '#64748b' }}>
                     CNPJ: 50.136.704/0001-64 | Rua Indaiatuba, 294 – Jd. Haydeé - Centro, Mauá, SP
                   </p>
                 </div>
 
                 {/* Right side: Signature Zone */}
-                <div className="md:col-span-5 flex flex-col items-center text-center relative pt-4 md:pt-0">
+                <div className="col-span-5 flex flex-col items-center text-center relative pt-4 md:pt-0">
                   {/* Cursive Handwriting Signature "Sânderson" */}
                   {showSignature && (
                     <div className="absolute top-[-36px] flex items-center justify-center select-none pointer-events-none transition-opacity">
