@@ -376,7 +376,17 @@ export default function ReciboGenerator() {
       return;
     }
 
-    // Elegant text message with markdown (excluding misleading auto-download message)
+    // 1. Force the automatic PDF download so it's saved locally and ready to be attached
+    try {
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(pdfResult.blob);
+      link.download = pdfResult.filename;
+      link.click();
+    } catch (downloadErr) {
+      console.error("Failed to automatically trigger PDF download:", downloadErr);
+    }
+
+    // Elegant text message with markdown
     const message = `Prezado(a) responsável, segue o recibo oficial digital da *Guarda Mirim de Mauá*.\n\n` +
       `• *Recibo:* ${receiptNumber}\n` +
       `• *Pagador:* ${pagador}\n` +
@@ -384,29 +394,13 @@ export default function ReciboGenerator() {
       `• *Valor:* R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n` +
       `• *Referente a:* ${referencia}`;
 
-    // Try sharing the actual PDF file directly (highly functional on mobile/tablets)
-    if (navigator.share && navigator.canShare) {
-      try {
-        const file = new File([pdfResult.blob], pdfResult.filename, { type: 'application/pdf' });
-        if (navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            files: [file],
-            title: `Recibo ${receiptNumber}`,
-            text: message
-          });
-          triggerToast("Recibo enviado/compartilhado!");
-          return;
-        }
-      } catch (err) {
-        console.log("Web Share was cancelled or not supported:", err);
-      }
-    }
-
-    // Fallback to standard WhatsApp Click-to-Chat (text message only)
+    // 2. Open WhatsApp Web / App with pre-filled message
     const cleanPhone = whatsapp.replace(/\D/g, '');
     const finalPhone = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
     const whatsappUrl = `https://wa.me/${finalPhone}?text=${encodeURIComponent(message)}`;
+    
     window.open(whatsappUrl, '_blank');
+    triggerToast("PDF baixado e WhatsApp aberto!");
   };
 
   // Date formatted beautifully for display
