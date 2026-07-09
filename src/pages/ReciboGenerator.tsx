@@ -299,6 +299,43 @@ export default function ReciboGenerator() {
     element.style.position = 'relative';
     element.style.boxShadow = 'none';
 
+    // PREPARE CLEAN STYLESHEETS (REMOVE OKLCH SO HTML2CANVAS DOES NOT CRASH)
+    const originalInlineStyles: { el: HTMLStyleElement; text: string | null }[] = [];
+    const styleElements = Array.from(document.querySelectorAll('style'));
+    
+    // Clean inline style tags
+    for (const el of styleElements) {
+      originalInlineStyles.push({ el, text: el.textContent });
+      if (el.textContent && el.textContent.includes('oklch')) {
+        el.textContent = el.textContent.replace(/oklch\([^)]+\)/g, 'rgba(120, 120, 120, 0.5)');
+      }
+    }
+
+    // Clean link stylesheets
+    const linkElements = Array.from(document.querySelectorAll('link[rel="stylesheet"]')) as HTMLLinkElement[];
+    const disabledLinks: HTMLLinkElement[] = [];
+    const tempStyleElements: HTMLStyleElement[] = [];
+
+    for (const link of linkElements) {
+      try {
+        const response = await fetch(link.href);
+        let cssText = await response.text();
+        if (cssText.includes('oklch')) {
+          cssText = cssText.replace(/oklch\([^)]+\)/g, 'rgba(120, 120, 120, 0.5)');
+        }
+        const tempStyle = document.createElement('style');
+        tempStyle.setAttribute('data-temp-clean-style', 'true');
+        tempStyle.textContent = cssText;
+        document.head.appendChild(tempStyle);
+        tempStyleElements.push(tempStyle);
+        
+        link.disabled = true;
+        disabledLinks.push(link);
+      } catch (err) {
+        console.warn("Failed to fetch/clean link stylesheet:", link.href, err);
+      }
+    }
+
     // Attempt multiple canvas scales to handle potential canvas sizing limitations, especially on iOS/mobile browsers
     const scalesToTry = [2.0, 1.5, 1.0];
     let canvas: HTMLCanvasElement | null = null;
@@ -331,6 +368,17 @@ export default function ReciboGenerator() {
       element.style.maxWidth = originalMaxWidth;
       element.style.position = originalPosition;
       element.style.boxShadow = originalBoxShadow;
+
+      // RESTORE STYLE TAGS AND ENABLE LINK STYLESHEETS
+      originalInlineStyles.forEach(({ el, text }) => {
+        el.textContent = text;
+      });
+      disabledLinks.forEach(link => {
+        link.disabled = false;
+      });
+      tempStyleElements.forEach(el => {
+        el.remove();
+      });
     }
 
     if (!canvas) {
@@ -914,7 +962,7 @@ export default function ReciboGenerator() {
               >
                 <div className="flex items-end gap-1 min-w-0">
                   <span className="font-extrabold shrink-0 uppercase tracking-tight text-xs pb-[2px]" style={{ color: '#334155' }}>NÚMERO DO RECIBO:</span>
-                  <span className="font-black font-mono text-base tracking-tight px-1 pb-[2px] truncate" style={{ color: '#1e40af', borderBottom: '1px solid #0f172a' }}>
+                  <span className="font-black font-mono text-base tracking-tight px-1 pb-[2px] whitespace-nowrap overflow-visible" style={{ color: '#1e40af', borderBottom: '1px solid #0f172a' }}>
                     {receiptNumber || 'GM-2026-___'}
                   </span>
                 </div>
@@ -928,7 +976,7 @@ export default function ReciboGenerator() {
               {/* Row 2: RECEBI DE */}
               <div className="flex items-end gap-2 min-h-[32px]">
                 <span className="font-extrabold shrink-0 uppercase tracking-tight text-xs pb-[4px]" style={{ color: '#334155' }}>RECEBI DE:</span>
-                <span className="flex-1 font-bold px-2 pb-[2px] italic text-sm truncate" style={{ color: '#0f172a', borderBottom: '1px solid #94a3b8' }}>
+                <span className="flex-1 font-bold px-2 pb-[2px] italic text-sm whitespace-nowrap overflow-visible" style={{ color: '#0f172a', borderBottom: '1px solid #94a3b8' }}>
                   {pagador || '__________________________________________________________________'}
                 </span>
               </div>
@@ -937,7 +985,7 @@ export default function ReciboGenerator() {
               <div className="grid grid-cols-12 gap-3 items-end">
                 <div className="col-span-7 flex items-end gap-2 min-h-[32px]">
                   <span className="font-extrabold shrink-0 uppercase tracking-tight text-xs pb-[4px]" style={{ color: '#334155' }}>CPF / RG:</span>
-                  <span className="flex-1 font-bold px-2 pb-[2px] font-mono truncate" style={{ color: '#0f172a', borderBottom: '1px solid #94a3b8' }}>
+                  <span className="flex-1 font-bold px-2 pb-[2px] font-mono whitespace-nowrap overflow-visible" style={{ color: '#0f172a', borderBottom: '1px solid #94a3b8' }}>
                     {documentVal || '__________________________'}
                   </span>
                 </div>
@@ -951,7 +999,7 @@ export default function ReciboGenerator() {
 
               {/* Row 4: EXTENSO TEXT ONLY */}
               <div className="flex items-end gap-2 min-h-[24px]">
-                <span className="flex-1 font-bold px-2 pb-[2px] italic text-xs" style={{ color: '#334155', borderBottom: '1px solid #94a3b8' }}>
+                <span className="flex-1 font-bold px-2 pb-[2px] italic text-xs whitespace-nowrap overflow-visible" style={{ color: '#334155', borderBottom: '1px solid #94a3b8' }}>
                   {valor > 0 ? extensoText : '____________________________________________________________________'}
                 </span>
               </div>
@@ -959,7 +1007,7 @@ export default function ReciboGenerator() {
               {/* Row 5: REFERENTE À */}
               <div className="flex items-end gap-2 min-h-[32px]">
                 <span className="font-extrabold shrink-0 uppercase tracking-tight text-xs pb-[4px]" style={{ color: '#334155' }}>REFERENTE À:</span>
-                <span className="flex-1 font-bold px-2 pb-[2px] italic text-sm truncate" style={{ color: '#0f172a', borderBottom: '1px solid #94a3b8' }}>
+                <span className="flex-1 font-bold px-2 pb-[2px] italic text-sm whitespace-nowrap overflow-visible" style={{ color: '#0f172a', borderBottom: '1px solid #94a3b8' }}>
                   {referencia || '__________________________________________________________________'}
                 </span>
               </div>
@@ -967,7 +1015,7 @@ export default function ReciboGenerator() {
               {/* Row 6: ALUNO */}
               <div className="flex items-end gap-2 min-h-[32px]">
                 <span className="font-extrabold shrink-0 uppercase tracking-tight text-xs pb-[4px]" style={{ color: '#334155' }}>DO ALUNO (A):</span>
-                <span className="flex-1 font-bold px-2 pb-[2px] text-sm truncate" style={{ color: '#0f172a', borderBottom: '1px solid #94a3b8' }}>
+                <span className="flex-1 font-bold px-2 pb-[2px] text-sm whitespace-nowrap overflow-visible" style={{ color: '#0f172a', borderBottom: '1px solid #94a3b8' }}>
                   {aluno || '__________________________________________________________________'}
                 </span>
               </div>
