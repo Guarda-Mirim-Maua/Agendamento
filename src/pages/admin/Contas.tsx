@@ -44,7 +44,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
 export interface Transaction {
@@ -535,7 +535,6 @@ export default function Contas() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const excelFileInputRef = useRef<HTMLInputElement>(null);
-  const pdfPrintRef = useRef<HTMLDivElement>(null);
 
   // Load transactions from Firestore
   async function loadData() {
@@ -545,13 +544,7 @@ export default function Contas() {
       const snapshot = await getDocs(q);
 
       if (snapshot.empty) {
-        // Seed default transactions if collection is empty
-        const seededList: Transaction[] = [];
-        for (const seedItem of SEED_DATA) {
-          const docRef = await addDoc(collection(db, 'contas_lancamentos'), seedItem);
-          seededList.push({ id: docRef.id, ...seedItem });
-        }
-        setTransactions(seededList);
+        setTransactions([]);
       } else {
         const loaded: Transaction[] = snapshot.docs.map((d) => ({
           id: d.id,
@@ -564,6 +557,23 @@ export default function Contas() {
       }
     } catch (err) {
       console.error('Error loading financial entries:', err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Optional manual seeding of sample data
+  async function handleSeedSampleData() {
+    if (!confirm('Deseja carregar os lançamentos de exemplo?')) return;
+    setLoading(true);
+    try {
+      for (const seedItem of SEED_DATA) {
+        await addDoc(collection(db, 'contas_lancamentos'), seedItem);
+      }
+      await loadData();
+    } catch (err) {
+      console.error('Erro ao carregar dados de exemplo:', err);
+      alert('Erro ao carregar dados de exemplo.');
     } finally {
       setLoading(false);
     }
@@ -1192,47 +1202,230 @@ export default function Contas() {
 
     setExportingPdf(true);
     try {
-      const element = pdfPrintRef.current;
-      if (!element) {
-        alert('Elemento para geração de PDF não foi encontrado.');
-        return;
-      }
-
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        windowWidth: 1000,
-      });
-
-      if (!canvas || canvas.width === 0 || canvas.height === 0) {
-        throw new Error('Erro na renderização do canvas para geração do PDF.');
-      }
-
       const docPdf = new jsPDF({
         orientation: 'p',
         unit: 'mm',
         format: 'a4',
       });
 
-      const imgData = canvas.toDataURL('image/png');
-      const imgWidth = 210;
-      const pageHeight = 297;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const pageWidth = docPdf.internal.pageSize.getWidth(); // 210mm
 
-      let heightLeft = imgHeight;
-      let position = 0;
+      // Header Title
+      docPdf.setFont('helvetica', 'bold');
+      docPdf.setFontSize(12);
+      docPdf.setTextColor(15, 23, 42); // slate-900
+      docPdf.text(
+        'CENTRO DE INTEGRAÇÃO INFANTO JUVENIL DE MAUÁ - CIIJM',
+        pageWidth / 2,
+        14,
+        { align: 'center' }
+      );
 
-      docPdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+      docPdf.setFont('helvetica', 'bold');
+      docPdf.setFontSize(9.5);
+      docPdf.setTextColor(71, 85, 105); // slate-600
+      docPdf.text('GUARDA MIRIM DE MAUÁ', pageWidth / 2, 19, { align: 'center' });
 
-      while (heightLeft > 2) {
-        position = heightLeft - imgHeight;
-        docPdf.addPage();
-        docPdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+      docPdf.setFont('helvetica', 'normal');
+      docPdf.setFontSize(7.5);
+      docPdf.setTextColor(100, 116, 139);
+      docPdf.text(
+        'CNPJ: 50.136.704/0001-64 | Rua Indaiatuba, 294 - Jd. Haydeé - Centro, Mauá, SP',
+        pageWidth / 2,
+        23.5,
+        { align: 'center' }
+      );
+
+      // Divider Line
+      docPdf.setDrawColor(203, 213, 225);
+      docPdf.setLineWidth(0.4);
+      docPdf.line(14, 27, pageWidth - 14, 27);
+
+      // Report Title Box
+      const monthTitleStr = selectedMonth === 'all'
+        ? 'TODOS OS PERÍODOS'
+        : format(parseISO(`${selectedMonth}-01`), "MMMM 'DE' yyyy", { locale: ptBR }).toUpperCase();
+
+      docPdf.setFillColor(241, 245, 249); // slate-100
+      docPdf.roundedRect(14, 30, pageWidth - 28, 8, 1.5, 1.5, 'F');
+      docPdf.setFont('helvetica', 'bold');
+      docPdf.setFontSize(8.5);
+      docPdf.setTextColor(30, 41, 59);
+      docPdf.text(
+        `RELATÓRIO FINANCEIRO DE CONTAS — ${monthTitleStr}`,
+        pageWidth / 2,
+        35.5,
+        { align: 'center' }
+      );
+
+      // Summary Cards (4 columns)
+      const gap = 3;
+      const margin = 14;
+      const totalAvailableWidth = pageWidth - margin * 2;
+      const cardWidth = (totalAvailableWidth - gap * 3) / 4;
+      const startY = 41;
+      const cardHeight = 13;
+
+      const formatCurrency = (val: number) =>
+        `R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+      // Card 1: Entradas
+      docPdf.setFillColor(248, 250, 252);
+      docPdf.setDrawColor(226, 232, 240);
+      docPdf.roundedRect(margin, startY, cardWidth, cardHeight, 1, 1, 'FD');
+      docPdf.setFontSize(6.5);
+      docPdf.setFont('helvetica', 'bold');
+      docPdf.setTextColor(100, 116, 139);
+      docPdf.text('TOTAL ENTRADAS', margin + cardWidth / 2, startY + 4, { align: 'center' });
+      docPdf.setFontSize(8.5);
+      docPdf.setTextColor(4, 120, 87); // emerald-700
+      docPdf.text(formatCurrency(totals.monthIncome), margin + cardWidth / 2, startY + 10, { align: 'center' });
+
+      // Card 2: Saídas
+      const x2 = margin + cardWidth + gap;
+      docPdf.setFillColor(248, 250, 252);
+      docPdf.setDrawColor(226, 232, 240);
+      docPdf.roundedRect(x2, startY, cardWidth, cardHeight, 1, 1, 'FD');
+      docPdf.setFontSize(6.5);
+      docPdf.setFont('helvetica', 'bold');
+      docPdf.setTextColor(100, 116, 139);
+      docPdf.text('TOTAL SAÍDAS', x2 + cardWidth / 2, startY + 4, { align: 'center' });
+      docPdf.setFontSize(8.5);
+      docPdf.setTextColor(190, 18, 60); // rose-700
+      docPdf.text(formatCurrency(totals.monthExpense), x2 + cardWidth / 2, startY + 10, { align: 'center' });
+
+      // Card 3: Resultado Mês
+      const x3 = x2 + cardWidth + gap;
+      docPdf.setFillColor(248, 250, 252);
+      docPdf.setDrawColor(226, 232, 240);
+      docPdf.roundedRect(x3, startY, cardWidth, cardHeight, 1, 1, 'FD');
+      docPdf.setFontSize(6.5);
+      docPdf.setFont('helvetica', 'bold');
+      docPdf.setTextColor(100, 116, 139);
+      docPdf.text('RESULTADO MÊS', x3 + cardWidth / 2, startY + 4, { align: 'center' });
+      docPdf.setFontSize(8.5);
+      if (totals.monthBalance >= 0) {
+        docPdf.setTextColor(4, 120, 87);
+      } else {
+        docPdf.setTextColor(190, 18, 60);
       }
+      docPdf.text(formatCurrency(totals.monthBalance), x3 + cardWidth / 2, startY + 10, { align: 'center' });
+
+      // Card 4: Saldo Caixa
+      const x4 = x3 + cardWidth + gap;
+      docPdf.setFillColor(248, 250, 252);
+      docPdf.setDrawColor(226, 232, 240);
+      docPdf.roundedRect(x4, startY, cardWidth, cardHeight, 1, 1, 'FD');
+      docPdf.setFontSize(6.5);
+      docPdf.setFont('helvetica', 'bold');
+      docPdf.setTextColor(100, 116, 139);
+      docPdf.text('SALDO GERAL CAIXA', x4 + cardWidth / 2, startY + 4, { align: 'center' });
+      docPdf.setFontSize(8.5);
+      docPdf.setTextColor(30, 58, 138); // blue-900
+      docPdf.text(formatCurrency(totals.totalCashBalance), x4 + cardWidth / 2, startY + 10, { align: 'center' });
+
+      // Transactions Table using jspdf-autotable
+      const tableRows = filteredTransactions.map((t) => [
+        format(parseISO(t.date), 'dd/MM/yyyy'),
+        t.notes ? `${t.description}\n(${t.notes})` : t.description,
+        t.category,
+        t.type === 'income' ? 'ENTRADA' : 'SAÍDA',
+        `${t.type === 'income' ? '+' : '-'} R$ ${t.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      ]);
+
+      autoTable(docPdf, {
+        startY: 57,
+        head: [['Data', 'Descrição / Histórico', 'Categoria', 'Tipo', 'Valor (R$)']],
+        body: tableRows,
+        margin: { left: 14, right: 14, bottom: 35 },
+        styles: {
+          font: 'helvetica',
+          fontSize: 7.5,
+          cellPadding: 2,
+          overflow: 'linebreak',
+        },
+        headStyles: {
+          fillColor: [30, 41, 59], // slate-800
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          halign: 'left',
+        },
+        columnStyles: {
+          0: { cellWidth: 22 },
+          1: { cellWidth: 'auto' },
+          2: { cellWidth: 42 },
+          3: { cellWidth: 20, halign: 'center', fontStyle: 'bold' },
+          4: { cellWidth: 32, halign: 'right', fontStyle: 'bold' },
+        },
+        didParseCell: (data) => {
+          if (data.section === 'body' && data.column.index === 4) {
+            const rowRaw = filteredTransactions[data.row.index];
+            if (rowRaw?.type === 'income') {
+              data.cell.styles.textColor = [4, 120, 87]; // green
+            } else {
+              data.cell.styles.textColor = [190, 18, 60]; // red
+            }
+          }
+        },
+        didDrawPage: (data) => {
+          const pageCount = docPdf.getNumberOfPages();
+          const currentPage = data.pageNumber;
+
+          docPdf.setFontSize(7.5);
+          docPdf.setFont('helvetica', 'normal');
+          docPdf.setTextColor(148, 163, 184);
+          docPdf.text(
+            `Página ${currentPage} de ${pageCount}`,
+            pageWidth - 14,
+            288,
+            { align: 'right' }
+          );
+          docPdf.text(
+            'CIIJM - Guarda Mirim de Mauá • Emitido em ' + format(new Date(), 'dd/MM/yyyy HH:mm'),
+            14,
+            288
+          );
+        },
+      });
+
+      // Signatures block after table
+      const finalY = (docPdf as any).lastAutoTable?.finalY || 200;
+      let signatureY = finalY + 16;
+
+      // If close to bottom of page, add new page for signatures
+      if (signatureY > 255) {
+        docPdf.addPage();
+        signatureY = 40;
+      }
+
+      const sigWidth = 70;
+      const sigX1 = 20;
+      const sigX2 = pageWidth - 20 - sigWidth;
+
+      docPdf.setDrawColor(30, 41, 59);
+      docPdf.setLineWidth(0.4);
+
+      // Line 1
+      docPdf.line(sigX1, signatureY, sigX1 + sigWidth, signatureY);
+      docPdf.setFontSize(8);
+      docPdf.setFont('helvetica', 'bold');
+      docPdf.setTextColor(30, 41, 59);
+      docPdf.text('TESOURARIA / RESP. FINANCEIRO', sigX1 + sigWidth / 2, signatureY + 4, { align: 'center' });
+      docPdf.setFontSize(7);
+      docPdf.setFont('helvetica', 'normal');
+      docPdf.setTextColor(100, 116, 139);
+      docPdf.text('CIIJM - Guarda Mirim de Mauá', sigX1 + sigWidth / 2, signatureY + 8, { align: 'center' });
+
+      // Line 2
+      docPdf.line(sigX2, signatureY, sigX2 + sigWidth, signatureY);
+      docPdf.setFontSize(8);
+      docPdf.setFont('helvetica', 'bold');
+      docPdf.setTextColor(30, 41, 59);
+      docPdf.text('SÂNDERSON CAIO LEITE DA SILVA', sigX2 + sigWidth / 2, signatureY + 4, { align: 'center' });
+      docPdf.setFontSize(7);
+      docPdf.setFont('helvetica', 'normal');
+      docPdf.setTextColor(100, 116, 139);
+      docPdf.text('PRESIDENTE DA ENTIDADE', sigX2 + sigWidth / 2, signatureY + 8, { align: 'center' });
 
       const formattedMonthName = selectedMonth !== 'all'
         ? format(parseISO(`${selectedMonth}-01`), 'MMMM_yyyy', { locale: ptBR })
@@ -1702,7 +1895,7 @@ export default function Contas() {
             <AlertCircle className="w-10 h-10 text-gray-300 mx-auto mb-2" />
             <p className="text-gray-600 font-bold text-sm">Nenhum lançamento encontrado</p>
             <p className="text-gray-400 text-xs mt-1">Tente ajustar os filtros, importar uma planilha ou incluir um novo lançamento.</p>
-            <div className="flex items-center justify-center gap-3 mt-4">
+            <div className="flex flex-wrap items-center justify-center gap-3 mt-4">
               <button
                 onClick={() => excelFileInputRef.current?.click()}
                 className="px-4 py-2 bg-emerald-500 text-white text-xs font-bold rounded-xl hover:bg-emerald-600 transition cursor-pointer flex items-center gap-1.5"
@@ -1716,6 +1909,15 @@ export default function Contas() {
               >
                 + Nova Movimentação
               </button>
+              {transactions.length === 0 && (
+                <button
+                  onClick={handleSeedSampleData}
+                  className="px-4 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-500" />
+                  <span>Carregar Lançamentos Exemplo</span>
+                </button>
+              )}
             </div>
           </div>
         ) : (
@@ -2409,111 +2611,6 @@ export default function Contas() {
         </div>
       )}
 
-      {/* OFFSCREEN PRINT CONTAINER FOR PDF REPORT GENERATION */}
-      <div style={{ position: 'fixed', left: '-9999px', top: '0', pointerEvents: 'none', opacity: 0, zIndex: -100 }}>
-        <div
-          ref={pdfPrintRef}
-          className="p-8 bg-white text-gray-900 font-sans w-[800px] space-y-6"
-          style={{ minHeight: '1100px' }}
-        >
-          {/* Institution Header */}
-          <div className="text-center border-b-2 border-primary pb-4">
-            <h1 className="text-xl font-black uppercase text-primary tracking-wide">
-              Centro de Integração Infanto Juvenil de Mauá - CIIJM
-            </h1>
-            <p className="text-xs font-bold text-gray-600">GUARDA MIRIM DE MAUÁ</p>
-            <p className="text-[10px] text-gray-500">
-              CNPJ: 50.136.704/0001-64 | Rua Indaiatuba, 294 - Jd. Haydeé - Centro, Mauá, SP
-            </p>
-            <div className="mt-3 inline-block px-4 py-1 bg-gray-100 text-gray-800 font-extrabold text-sm rounded border border-gray-300 uppercase">
-              RELATÓRIO FINANCEIRO DE CONTAS — {monthDisplayTitle}
-            </div>
-          </div>
-
-          {/* Report Summary Table */}
-          <div className="grid grid-cols-4 gap-3 text-center text-xs">
-            <div className="p-2.5 bg-gray-50 border border-gray-200 rounded">
-              <span className="block text-[10px] font-bold text-gray-500 uppercase">Total Entradas</span>
-              <span className="text-sm font-black text-emerald-700">
-                R$ {totals.monthIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </span>
-            </div>
-            <div className="p-2.5 bg-gray-50 border border-gray-200 rounded">
-              <span className="block text-[10px] font-bold text-gray-500 uppercase">Total Saídas</span>
-              <span className="text-sm font-black text-rose-700">
-                R$ {totals.monthExpense.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </span>
-            </div>
-            <div className="p-2.5 bg-gray-50 border border-gray-200 rounded">
-              <span className="block text-[10px] font-bold text-gray-500 uppercase">Resultado Mês</span>
-              <span className={`text-sm font-black ${totals.monthBalance >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
-                R$ {totals.monthBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </span>
-            </div>
-            <div className="p-2.5 bg-gray-50 border border-gray-200 rounded">
-              <span className="block text-[10px] font-bold text-gray-500 uppercase">Saldo Geral Caixa</span>
-              <span className="text-sm font-black text-blue-900">
-                R$ {totals.totalCashBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </span>
-            </div>
-          </div>
-
-          {/* Transactions List */}
-          <div>
-            <h3 className="font-extrabold text-xs text-gray-700 uppercase tracking-wider mb-2 border-b border-gray-200 pb-1">
-              Relação Analítica de Lançamentos
-            </h3>
-            <table className="w-full text-left text-[11px] border border-gray-200">
-              <thead className="bg-gray-100 font-bold border-b border-gray-200 text-gray-700">
-                <tr>
-                  <th className="p-2 border-r">Data</th>
-                  <th className="p-2 border-r">Descrição / Histórico</th>
-                  <th className="p-2 border-r">Categoria</th>
-                  <th className="p-2 border-r text-center">Tipo</th>
-                  <th className="p-2 text-right">Valor (R$)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredTransactions.map((t) => (
-                  <tr key={t.id}>
-                    <td className="p-2 border-r font-mono whitespace-nowrap">
-                      {format(parseISO(t.date), 'dd/MM/yyyy')}
-                    </td>
-                    <td className="p-2 border-r font-medium">
-                      {t.description}
-                      {t.notes && <span className="block text-[9px] text-gray-500 italic">{t.notes}</span>}
-                    </td>
-                    <td className="p-2 border-r">{t.category}</td>
-                    <td className="p-2 border-r text-center font-bold">
-                      {t.type === 'income' ? 'ENTRADA' : 'SAÍDA'}
-                    </td>
-                    <td className={`p-2 text-right font-mono font-bold ${t.type === 'income' ? 'text-emerald-700' : 'text-rose-700'}`}>
-                      {t.type === 'income' ? '+' : '-'} R$ {t.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Signatures Footer */}
-          <div className="pt-12 grid grid-cols-2 gap-12 text-center text-xs">
-            <div>
-              <div className="border-t border-gray-800 pt-1 font-bold text-gray-800">
-                TESOURARIA / RESPONSÁVEL FINANCEIRO
-              </div>
-              <p className="text-[10px] text-gray-500">CIIJM - Guarda Mirim de Mauá</p>
-            </div>
-
-            <div>
-              <div className="border-t border-gray-800 pt-1 font-bold text-gray-800">
-                SÂNDERSON CAIO LEITE DA SILVA
-              </div>
-              <p className="text-[10px] text-gray-500">PRESIDENTE DA ENTIDADE</p>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
