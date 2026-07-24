@@ -1192,20 +1192,28 @@ export default function Contas() {
 
     setExportingPdf(true);
     try {
-      const docPdf = new jsPDF({
-        orientation: 'p',
-        unit: 'mm',
-        format: 'a4',
-      });
-
       const element = pdfPrintRef.current;
-      if (!element) return;
+      if (!element) {
+        alert('Elemento para geração de PDF não foi encontrado.');
+        return;
+      }
 
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
+        windowWidth: 1000,
+      });
+
+      if (!canvas || canvas.width === 0 || canvas.height === 0) {
+        throw new Error('Erro na renderização do canvas para geração do PDF.');
+      }
+
+      const docPdf = new jsPDF({
+        orientation: 'p',
+        unit: 'mm',
+        format: 'a4',
       });
 
       const imgData = canvas.toDataURL('image/png');
@@ -1219,7 +1227,7 @@ export default function Contas() {
       docPdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
 
-      while (heightLeft >= 0) {
+      while (heightLeft > 2) {
         position = heightLeft - imgHeight;
         docPdf.addPage();
         docPdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
@@ -1231,9 +1239,9 @@ export default function Contas() {
         : 'Geral';
 
       docPdf.save(`Relatorio_Financeiro_CIIJM_${formattedMonthName}.pdf`);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error generating PDF report:', err);
-      alert('Ocorreu um erro ao gerar o arquivo PDF.');
+      alert(`Ocorreu um erro ao gerar o arquivo PDF: ${err?.message || 'Erro desconhecido'}`);
     } finally {
       setExportingPdf(false);
     }
@@ -2401,8 +2409,8 @@ export default function Contas() {
         </div>
       )}
 
-      {/* HIDDEN PRINT CONTAINER FOR PDF REPORT GENERATION */}
-      <div className="hidden">
+      {/* OFFSCREEN PRINT CONTAINER FOR PDF REPORT GENERATION */}
+      <div style={{ position: 'fixed', left: '-9999px', top: '0', pointerEvents: 'none', opacity: 0, zIndex: -100 }}>
         <div
           ref={pdfPrintRef}
           className="p-8 bg-white text-gray-900 font-sans w-[800px] space-y-6"
