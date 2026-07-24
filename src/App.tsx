@@ -14,6 +14,7 @@ import Schedule from './pages/admin/Schedule';
 import Collaborators from './pages/admin/Collaborators';
 import AuditLogs from './pages/admin/AuditLogs';
 import ReciboGenerator from './pages/ReciboGenerator';
+import Contas from './pages/admin/Contas';
 
 export default function App() {
   return (
@@ -28,6 +29,18 @@ export default function App() {
 
           {/* Digital Receipt Generator Page */}
           <Route path="/recibo" element={<ReciboGenerator />} />
+
+          {/* Direct Financial Management Route (/contas) */}
+          <Route
+            path="/contas"
+            element={
+              <ProtectedRoute>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Contas />} />
+          </Route>
 
           {/* Root redirect to agendar */}
           <Route path="/" element={<Navigate to="/agendar" replace />} />

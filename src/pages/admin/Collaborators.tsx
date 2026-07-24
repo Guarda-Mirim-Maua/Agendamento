@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps, @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/set-state-in-effect, @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
 import { db, firebaseConfig } from '../../lib/firebase';
 import { collection, getDocs, doc, setDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
