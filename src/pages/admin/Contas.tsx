@@ -778,9 +778,21 @@ export default function Contas() {
             } else if (colName.includes('descrição') || colName.includes('historico') || colName.includes('histórico') || colName.includes('detalhe') || colName.includes('nome') || colName.includes('memo')) {
               if (descCol === -1) descCol = idx;
             } else if (colName.includes('origem')) {
-              origemCol = idx;
+              if (origemCol === -1 || colName === 'origem' || colName === 'nome origem') {
+                if (!colName.includes('documento') && !colName.includes('conta') && !colName.includes('agência') && !colName.includes('agencia') && !colName.includes('instituição') && !colName.includes('instituicao')) {
+                  origemCol = idx;
+                } else if (origemCol === -1) {
+                  origemCol = idx;
+                }
+              }
             } else if (colName.includes('destino')) {
-              destinoCol = idx;
+              if (destinoCol === -1 || colName === 'destino' || colName === 'nome destino') {
+                if (!colName.includes('documento') && !colName.includes('conta') && !colName.includes('agência') && !colName.includes('agencia') && !colName.includes('instituição') && !colName.includes('instituicao')) {
+                  destinoCol = idx;
+                } else if (destinoCol === -1) {
+                  destinoCol = idx;
+                }
+              }
             } else if (colName.includes('débito') || colName.includes('debito') || colName.includes('saída')) {
               debitCol = idx;
             } else if (colName.includes('crédito') || colName.includes('credito') || colName.includes('entrada')) {
@@ -870,10 +882,58 @@ export default function Contas() {
           parsedType = 'expense';
         }
 
-        // Compose Description
-        let fullDesc = String(rawDescCell || rawTypeCell || 'Lançamento de Extrato').trim();
-        if (rawOrigemCell) fullDesc += ` (Origem: ${rawOrigemCell})`;
-        if (rawDestinoCell) fullDesc += ` (Destino: ${rawDestinoCell})`;
+        // Clean party values (remove Desconhecido, undefined, etc.)
+        const cleanPartyVal = (val: any) => {
+          if (!val) return '';
+          const s = String(val).trim();
+          const upper = s.toUpperCase();
+          if (
+            !s ||
+            upper === 'DESCONHECIDO' ||
+            upper === 'UNDEFINED' ||
+            upper === 'NULL' ||
+            upper === '-' ||
+            upper === 'N/A'
+          ) {
+            return '';
+          }
+          return s;
+        };
+
+        const origemVal = cleanPartyVal(rawOrigemCell);
+        const destinoVal = cleanPartyVal(rawDestinoCell);
+        const baseDesc = String(rawDescCell || rawTypeCell || 'Lançamento de Extrato').trim();
+
+        let fullDesc = baseDesc;
+        let rowNotes = `Importado de extrato bancário (${file.name})`;
+
+        if (parsedType === 'expense') {
+          // Saída (Despesa): Priorizar Destino
+          if (destinoVal) {
+            if (!baseDesc.toLowerCase().includes(destinoVal.toLowerCase())) {
+              fullDesc = `${baseDesc} - ${destinoVal}`;
+            }
+            rowNotes = `Destino: ${destinoVal} | Importado de extrato bancário (${file.name})`;
+          } else if (origemVal && !origemVal.toUpperCase().includes('CENTRO DE INTEGRAÇÃO')) {
+            if (!baseDesc.toLowerCase().includes(origemVal.toLowerCase())) {
+              fullDesc = `${baseDesc} - ${origemVal}`;
+            }
+            rowNotes = `Origem: ${origemVal} | Importado de extrato bancário (${file.name})`;
+          }
+        } else {
+          // Entrada (Receita): Priorizar Origem
+          if (origemVal) {
+            if (!baseDesc.toLowerCase().includes(origemVal.toLowerCase())) {
+              fullDesc = `${baseDesc} - ${origemVal}`;
+            }
+            rowNotes = `Origem: ${origemVal} | Importado de extrato bancário (${file.name})`;
+          } else if (destinoVal && !destinoVal.toUpperCase().includes('CENTRO DE INTEGRAÇÃO')) {
+            if (!baseDesc.toLowerCase().includes(destinoVal.toLowerCase())) {
+              fullDesc = `${baseDesc} - ${destinoVal}`;
+            }
+            rowNotes = `Destino: ${destinoVal} | Importado de extrato bancário (${file.name})`;
+          }
+        }
 
         // Auto suggest Category
         const suggestedCat = autoSuggestCategory(fullDesc, parsedType);
@@ -895,10 +955,11 @@ export default function Contas() {
           category: suggestedCat,
           type: parsedType,
           amount: amount,
+          notes: rowNotes,
           isDuplicate: isDuplicate,
-          rawOrigem: String(rawOrigemCell),
-          rawDestino: String(rawDestinoCell),
-          rawTipo: String(rawTypeCell),
+          rawOrigem: String(rawOrigemCell || ''),
+          rawDestino: String(rawDestinoCell || ''),
+          rawTipo: String(rawTypeCell || ''),
         });
       }
 
@@ -1051,7 +1112,7 @@ export default function Contas() {
           category: item.category,
           type: item.type,
           amount: item.amount,
-          notes: `Importado de extrato bancário (${importedFileName})`,
+          notes: item.notes ? item.notes.trim() : `Importado de extrato bancário (${importedFileName})`,
           createdAt: Date.now(),
         };
 
