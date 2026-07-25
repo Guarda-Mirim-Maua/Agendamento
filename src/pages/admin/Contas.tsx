@@ -525,6 +525,8 @@ export default function Contas() {
   const [formProofName, setFormProofName] = useState<string>('');
   const [formProofType, setFormProofType] = useState<string>('');
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [isAnalyzingReceipt, setIsAnalyzingReceipt] = useState(false);
+  const [aiScanNotice, setAiScanNotice] = useState<string | null>(null);
 
   // Excel Import Module State
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -1062,6 +1064,8 @@ export default function Contas() {
 
   // Open Modal for Manual Add/Edit
   function handleOpenModal(item?: Transaction) {
+    setAiScanNotice(null);
+    setIsAnalyzingReceipt(false);
     if (item) {
       setEditingItem(item);
       setFormDate(item.date);
@@ -1089,7 +1093,7 @@ export default function Contas() {
     setIsModalOpen(true);
   }
 
-  // Handle Proof File Upload
+  // Handle Proof File Upload with Gemini AI Auto-Scan
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -1101,11 +1105,72 @@ export default function Contas() {
     }
 
     setUploadingFile(true);
+    setAiScanNotice(null);
     try {
       const processed = await processFileToDataUrl(file);
       setFormProofUrl(processed.url);
       setFormProofName(processed.name);
       setFormProofType(processed.type);
+
+      // Trigger AI Receipt Analysis for images and PDFs
+      if (processed.type.startsWith('image/') || processed.type === 'application/pdf') {
+        setIsAnalyzingReceipt(true);
+        try {
+          const apiRes = await fetch('/api/analyze-receipt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              imageBase64: processed.url,
+              mimeType: processed.type,
+            }),
+          });
+
+          const resData = await apiRes.json();
+          if (resData.success && resData.data) {
+            const { amount, date, description, notes, category, type } = resData.data;
+
+            // 1. Type (Entrada vs Saída)
+            const resolvedType = (type === 'income' || type === 'expense') ? type : 'expense';
+            setFormType(resolvedType);
+
+            // 2. Amount
+            if (amount && Number(amount) > 0) {
+              setFormAmount(amount.toString());
+            }
+
+            // 3. Date
+            if (date && typeof date === 'string' && date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+              setFormDate(date);
+            }
+
+            // 4. Description (Vendor / Entity Name from receipt)
+            if (description && typeof description === 'string' && description.trim()) {
+              setFormDescription(description.trim());
+            }
+
+            // 5. Notes (Internal details / Item list)
+            if (notes && typeof notes === 'string' && notes.trim()) {
+              setFormNotes(notes.trim());
+            }
+
+            // 6. Category
+            if (category && typeof category === 'string') {
+              const targetList = resolvedType === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+              const matched = targetList.find((c) => c.toLowerCase() === category.toLowerCase()) ||
+                EXPENSE_CATEGORIES.find((c) => c.toLowerCase() === category.toLowerCase());
+              if (matched) {
+                setFormCategory(matched);
+              }
+            }
+
+            setAiScanNotice('Recibo lido com sucesso pela IA! Os campos Valor, Descrição, Observações e Categoria foram preenchidos.');
+          }
+        } catch (aiErr) {
+          console.warn('Erro ao processar recibo por IA:', aiErr);
+        } finally {
+          setIsAnalyzingReceipt(false);
+        }
+      }
     } catch (err) {
       console.error('Error processing proof file:', err);
       alert('Erro ao processar arquivo de comprovante.');
@@ -2408,10 +2473,36 @@ export default function Contas() {
                         </label>
 
                         <p className="text-[11px] text-gray-400 mt-2">
-                          Suporta imagens (PNG, JPG, WEBP) e arquivos PDF de até 10MB
+                          Suporta imagens (PNG, JPG, WEBP) e arquivos PDF. <br />
+                          <span className="text-amber-700 font-semibold">Leitura automática por IA ao anexar recibo.</span>
                         </p>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* AI Processing Status Indicator */}
+                {isAnalyzingReceipt && (
+                  <div className="mt-2.5 p-3 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center gap-2.5 text-xs text-indigo-950 font-bold animate-pulse">
+                    <Sparkles className="w-4 h-4 text-indigo-600 animate-spin shrink-0" />
+                    <span>Lendo comprovante com IA e preenchendo valor, fornecedor, observações e categoria...</span>
+                  </div>
+                )}
+
+                {/* AI Success Notice */}
+                {aiScanNotice && !isAnalyzingReceipt && (
+                  <div className="mt-2.5 p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between gap-2 text-xs text-emerald-950 font-bold">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>{aiScanNotice}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setAiScanNotice(null)}
+                      className="text-emerald-700 hover:text-emerald-950 text-xs font-black px-1.5 py-0.5 rounded cursor-pointer"
+                    >
+                      ✕
+                    </button>
                   </div>
                 )}
               </div>
