@@ -35,12 +35,10 @@ export default function App() {
             path="/contas"
             element={
               <ProtectedRoute>
-                <AdminLayout />
+                <Contas />
               </ProtectedRoute>
             }
-          >
-            <Route index element={<Contas />} />
-          </Route>
+          />
 
           {/* Root redirect to agendar */}
           <Route path="/" element={<Navigate to="/agendar" replace />} />

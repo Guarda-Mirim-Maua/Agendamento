@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect, @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { db } from '../../lib/firebase';
@@ -41,7 +42,8 @@ import {
   CheckSquare,
   Square,
   FileCheck2,
-  Sparkles
+  Sparkles,
+  LayoutDashboard
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -531,7 +533,6 @@ export default function Contas() {
   const [isParsingExcel, setIsParsingExcel] = useState(false);
   const [importSearchTerm, setImportSearchTerm] = useState('');
   const [isImportingProgress, setIsImportingProgress] = useState(false);
-  const [isDraggingExcel, setIsDraggingExcel] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const excelFileInputRef = useRef<HTMLInputElement>(null);
@@ -984,80 +985,6 @@ export default function Contas() {
     if (files && files.length > 0) {
       processExcelFile(files[0]);
     }
-  }
-
-  function handleExcelDrop(e: React.DragEvent<HTMLDivElement>) {
-    e.preventDefault();
-    setIsDraggingExcel(false);
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const file = e.dataTransfer.files[0];
-      if (file.name.match(/\.(xlsx|xls|csv)$/i)) {
-        processExcelFile(file);
-      } else {
-        alert('Por favor, selecione um arquivo em formato Excel (.xlsx, .xls) ou CSV.');
-      }
-    }
-  }
-
-  // Generate Sample Excel Template for user download
-  function handleDownloadSampleExcel() {
-    const sampleData = [
-      {
-        'Data Movimentação': '05/07/2026',
-        'Movimentação': 'PIX Recebido - Doação Mensal Empresa',
-        'Tipo': 'Crédito',
-        'Valor (R$)': '3500.00',
-        'Origem': 'Empresa Parceira S.A.',
-        'Destino': 'CIIJM - Guarda Mirim de Mauá',
-        'Saldo Antes': '15000.00',
-        'Saldo Depois': '18500.00',
-      },
-      {
-        'Data Movimentação': '08/07/2026',
-        'Movimentação': 'Pagamento de Energia Elétrica Enel',
-        'Tipo': 'Débito',
-        'Valor (R$)': '-642.50',
-        'Origem': 'CIIJM - Guarda Mirim de Mauá',
-        'Destino': 'ENEL Distribuição SP',
-        'Saldo Antes': '18500.00',
-        'Saldo Depois': '17857.50',
-      },
-      {
-        'Data Movimentação': '10/07/2026',
-        'Movimentação': 'PIX Recebido Mensalidades e Contribuições',
-        'Tipo': 'Crédito',
-        'Valor (R$)': '2150.00',
-        'Origem': 'Contribuição Alunos',
-        'Destino': 'CIIJM - Guarda Mirim de Mauá',
-        'Saldo Antes': '17857.50',
-        'Saldo Depois': '20007.50',
-      },
-      {
-        'Data Movimentação': '12/07/2026',
-        'Movimentação': 'Honorários Contábeis Mensais',
-        'Tipo': 'Débito',
-        'Valor (R$)': '-450.00',
-        'Origem': 'CIIJM - Guarda Mirim de Mauá',
-        'Destino': 'Escritório de Contabilidade',
-        'Saldo Antes': '20007.50',
-        'Saldo Depois': '19557.50',
-      },
-      {
-        'Data Movimentação': '15/07/2026',
-        'Movimentação': 'Compra Cestas Básicas Atendidos',
-        'Tipo': 'Débito',
-        'Valor (R$)': '-1120.00',
-        'Origem': 'CIIJM - Guarda Mirim de Mauá',
-        'Destino': 'Supermercado Mauá',
-        'Saldo Antes': '19557.50',
-        'Saldo Depois': '18437.50',
-      },
-    ];
-
-    const ws = XLSX.utils.json_to_sheet(sampleData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Extrato_Bancario');
-    XLSX.writeFile(wb, 'Modelo_Extrato_Bancario_Stone_CIIJM.xlsx');
   }
 
   // Toggle Selection in Preview Table
@@ -1531,7 +1458,7 @@ export default function Contas() {
   }, [importedRows, importSearchTerm]);
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-slate-50/70 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
         <div>
@@ -1548,6 +1475,16 @@ export default function Contas() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          {/* Link to Admin Panel */}
+          <Link
+            to="/admin"
+            className="flex items-center gap-2 px-3.5 py-2.5 text-xs sm:text-sm font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl transition-all cursor-pointer shadow-xs"
+            title="Ir para o Painel Administrativo da Agenda"
+          >
+            <LayoutDashboard className="w-4 h-4 text-slate-600" />
+            <span>Painel Admin</span>
+          </Link>
+
           {/* Export PDF Button */}
           <button
             onClick={handleGeneratePdf}
@@ -1682,61 +1619,6 @@ export default function Contas() {
           <p className="text-[11px] text-gray-400 mt-2 capitalize">
             Resultado de {monthDisplayTitle}
           </p>
-        </div>
-      </div>
-
-      {/* Excel Drag & Drop Fast Import Banner */}
-      <div
-        onDragOver={(e) => {
-          e.preventDefault();
-          setIsDraggingExcel(true);
-        }}
-        onDragLeave={() => setIsDraggingExcel(false)}
-        onDrop={handleExcelDrop}
-        className={`p-5 rounded-2xl border-2 border-dashed transition-all ${
-          isDraggingExcel
-            ? 'border-emerald-500 bg-emerald-50/80 scale-[1.01]'
-            : 'border-emerald-200 bg-gradient-to-r from-emerald-50/40 via-white to-teal-50/40 hover:border-emerald-300'
-        }`}
-      >
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            <div className="p-3 bg-emerald-500 text-white rounded-2xl shadow-md shadow-emerald-500/20 shrink-0">
-              <FileSpreadsheet className="w-6 h-6" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-bold text-gray-900 text-sm sm:text-base">
-                  Módulo de Importação de Extrato Bancário
-                </h3>
-                <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase">
-                  Stone / Bancos
-                </span>
-              </div>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Arraste seu arquivo Excel (.xlsx, .xls, .csv) de extrato bancário para conciliação automática no navegador.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2.5 shrink-0">
-            <button
-              onClick={handleDownloadSampleExcel}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition cursor-pointer shadow-2xs"
-              title="Baixar planilha modelo em Excel para testes"
-            >
-              <Download className="w-3.5 h-3.5 text-slate-500" />
-              <span>Baixar Modelo Excel</span>
-            </button>
-
-            <label
-              onClick={() => excelFileInputRef.current?.click()}
-              className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-emerald-950 bg-emerald-400 hover:bg-emerald-300 rounded-xl transition cursor-pointer shadow-sm"
-            >
-              <Upload className="w-3.5 h-3.5 text-emerald-950" />
-              <span>Selecionar Arquivo</span>
-            </label>
-          </div>
         </div>
       </div>
 
