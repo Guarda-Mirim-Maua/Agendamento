@@ -1200,9 +1200,13 @@ export default function Contas() {
             }
 
             setAiScanNotice('Recibo lido com sucesso pela IA! Os campos Valor, Descrição, Observações e Categoria foram preenchidos.');
+          } else {
+            const errorText = resData.error || 'Não foi possível extrair dados automaticamente.';
+            setAiScanNotice(`Aviso da Leitura IA: ${errorText}`);
           }
         } catch (aiErr) {
           console.warn('Erro ao processar recibo por IA:', aiErr);
+          setAiScanNotice('Não foi possível realizar o preenchimento automático via IA para este comprovante. Por favor, preencha os dados manualmente.');
         } finally {
           setIsAnalyzingReceipt(false);
         }

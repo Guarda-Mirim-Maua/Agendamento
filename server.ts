@@ -64,37 +64,54 @@ Examine o comprovante anexado e extraia as seguintes informações estruturadas 
    - "Outras Receitas"
 6. "type": "expense" se for despesa/comprovante de pagamento/saída, ou "income" se for recibo de doação/receita/entrada. Default é "expense".`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.6-flash',
-        contents: [
-          {
-            inlineData: {
-              data: base64Data,
-              mimeType: cleanMimeType,
-            },
-          },
-          {
-            text: prompt,
-          },
-        ],
-        config: {
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              amount: { type: Type.NUMBER, description: 'Valor total do recibo' },
-              date: { type: Type.STRING, description: 'Data YYYY-MM-DD' },
-              description: { type: Type.STRING, description: 'Nome do fornecedor ou estabelecimento no recibo' },
-              notes: { type: Type.STRING, description: 'Detalhamento do que foi comprado ou pago' },
-              category: { type: Type.STRING, description: 'Categoria exata recomendada' },
-              type: { type: Type.STRING, description: 'expense ou income' },
-            },
-            required: ['amount', 'description', 'notes', 'category', 'type'],
-          },
-        },
-      });
+      let response;
+      const modelsToTry = ['gemini-3.6-flash', 'gemini-flash-latest', 'gemini-3.1-pro-preview'];
+      let lastError: unknown = null;
 
-      const jsonText = response.text?.trim() || '{}';
+      for (const modelName of modelsToTry) {
+        try {
+          response = await ai.models.generateContent({
+            model: modelName,
+            contents: [
+              {
+                inlineData: {
+                  data: base64Data,
+                  mimeType: cleanMimeType,
+                },
+              },
+              {
+                text: prompt,
+              },
+            ],
+            config: {
+              responseMimeType: 'application/json',
+              responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                  amount: { type: Type.NUMBER, description: 'Valor total do recibo' },
+                  date: { type: Type.STRING, description: 'Data YYYY-MM-DD' },
+                  description: { type: Type.STRING, description: 'Nome do fornecedor ou estabelecimento no recibo' },
+                  notes: { type: Type.STRING, description: 'Detalhamento do que foi comprado ou pago' },
+                  category: { type: Type.STRING, description: 'Categoria exata recomendada' },
+                  type: { type: Type.STRING, description: 'expense ou income' },
+                },
+                required: ['amount', 'description', 'notes', 'category', 'type'],
+              },
+            },
+          });
+          if (response?.text) break;
+        } catch (mErr) {
+          console.warn(`Model ${modelName} failed in receipt analysis:`, mErr);
+          lastError = mErr;
+        }
+      }
+
+      if (!response?.text) {
+        throw lastError || new Error('Nenhum modelo de IA retornou resposta.');
+      }
+
+      let jsonText = response.text.trim();
+      jsonText = jsonText.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/```$/, '').trim();
       const parsedData = JSON.parse(jsonText);
 
       return res.json({
