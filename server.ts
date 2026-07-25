@@ -39,9 +39,14 @@ async function startServer() {
         },
       });
 
-      const cleanMimeType = mimeType || 'image/png';
+      let cleanMimeType = mimeType || 'image/png';
+      const dataUriMatch = imageBase64.match(/^data:([^;]+);base64,/);
+      if (dataUriMatch && dataUriMatch[1]) {
+        cleanMimeType = dataUriMatch[1];
+      }
+
       // Clean base64 prefix if passed
-      const base64Data = imageBase64.replace(/^data:[^;]+;base64,/, '');
+      const base64Data = imageBase64.replace(/^data:[^;]+;base64,/, '').trim();
 
       const prompt = `Você é um assistente contábil perito em analisar recibos, notas fiscais, faturas e comprovantes de pagamento para a entidade social "Guarda Mirim de Mauá" (CIIJM).
 
@@ -64,25 +69,33 @@ Examine o comprovante anexado e extraia as seguintes informações estruturadas 
    - "Outras Receitas"
 6. "type": "expense" se for despesa/comprovante de pagamento/saída, ou "income" se for recibo de doação/receita/entrada. Default é "expense".`;
 
-      let response;
+      const contentsPayload = [
+        {
+          role: 'user',
+          parts: [
+            {
+              inlineData: {
+                data: base64Data,
+                mimeType: cleanMimeType,
+              },
+            },
+            {
+              text: prompt,
+            },
+          ],
+        },
+      ];
+
+      let rawText = '';
       const modelsToTry = ['gemini-3.6-flash', 'gemini-flash-latest', 'gemini-3.1-pro-preview'];
       let lastError: unknown = null;
 
+      // Attempt 1: With responseSchema
       for (const modelName of modelsToTry) {
         try {
-          response = await ai.models.generateContent({
+          const response = await ai.models.generateContent({
             model: modelName,
-            contents: [
-              {
-                inlineData: {
-                  data: base64Data,
-                  mimeType: cleanMimeType,
-                },
-              },
-              {
-                text: prompt,
-              },
-            ],
+            contents: contentsPayload,
             config: {
               responseMimeType: 'application/json',
               responseSchema: {
@@ -99,19 +112,49 @@ Examine o comprovante anexado e extraia as seguintes informações estruturadas 
               },
             },
           });
-          if (response?.text) break;
+          if (response?.text) {
+            rawText = response.text;
+            break;
+          }
         } catch (mErr) {
-          console.warn(`Model ${modelName} failed in receipt analysis:`, mErr);
+          console.warn(`Model ${modelName} with schema failed in receipt analysis:`, mErr);
           lastError = mErr;
         }
       }
 
-      if (!response?.text) {
-        throw lastError || new Error('Nenhum modelo de IA retornou resposta.');
+      // Attempt 2: Without responseSchema (fallback for unstructured parsing)
+      if (!rawText) {
+        for (const modelName of modelsToTry) {
+          try {
+            const response = await ai.models.generateContent({
+              model: modelName,
+              contents: contentsPayload,
+            });
+            if (response?.text) {
+              rawText = response.text;
+              break;
+            }
+          } catch (mErr) {
+            console.warn(`Model ${modelName} raw prompt failed in receipt analysis:`, mErr);
+            lastError = mErr;
+          }
+        }
       }
 
-      let jsonText = response.text.trim();
+      if (!rawText) {
+        console.error('Error in analyze-receipt API: All Gemini attempts failed.', lastError);
+        throw lastError || new Error('Nenhum modelo de IA conseguiu processar este comprovante.');
+      }
+
+      let jsonText = rawText.trim();
       jsonText = jsonText.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/```$/, '').trim();
+      
+      // Extract JSON if embedded in surrounding text
+      const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        jsonText = jsonMatch[0];
+      }
+
       const parsedData = JSON.parse(jsonText);
 
       return res.json({
