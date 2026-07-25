@@ -1597,18 +1597,18 @@ export default function Contas() {
           {/* Link to Admin Panel */}
           <Link
             to="/admin"
-            className="flex items-center justify-center gap-2 px-3.5 py-2.5 text-xs sm:text-sm font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl transition-all cursor-pointer shadow-2xs whitespace-nowrap"
+            className="flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 py-2.5 sm:px-3.5 text-xs sm:text-sm font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl transition-all cursor-pointer shadow-2xs text-center leading-tight sm:leading-normal min-h-[56px] lg:min-h-0 whitespace-normal lg:whitespace-nowrap"
             title="Ir para o Painel Administrativo da Agenda"
           >
             <LayoutDashboard className="w-4 h-4 text-slate-600 shrink-0" />
-            <span>Painel Admin</span>
+            <span className="text-center">Painel Admin</span>
           </Link>
 
           {/* Export PDF Button */}
           <button
             onClick={handleGeneratePdf}
             disabled={exportingPdf}
-            className="flex items-center justify-center gap-2 px-3.5 py-2.5 text-xs sm:text-sm font-bold text-white bg-slate-800 hover:bg-slate-900 rounded-xl transition-all cursor-pointer shadow-2xs disabled:opacity-50 whitespace-nowrap"
+            className="flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 py-2.5 sm:px-3.5 text-xs sm:text-sm font-bold text-white bg-slate-800 hover:bg-slate-900 rounded-xl transition-all cursor-pointer shadow-2xs disabled:opacity-50 text-center leading-tight sm:leading-normal min-h-[56px] lg:min-h-0 whitespace-normal lg:whitespace-nowrap"
             title="Gerar Relatório em PDF para Contabilidade"
           >
             {exportingPdf ? (
@@ -1616,7 +1616,7 @@ export default function Contas() {
             ) : (
               <Download className="w-4 h-4 text-emerald-400 shrink-0" />
             )}
-            <span>Gerar Relatório PDF</span>
+            <span className="text-center">Gerar Relatório PDF</span>
           </button>
 
           {/* Import Excel Button */}
@@ -1627,7 +1627,7 @@ export default function Contas() {
               }
             }}
             disabled={isParsingExcel}
-            className="flex items-center justify-center gap-2 px-3.5 py-2.5 text-xs sm:text-sm font-bold text-emerald-950 bg-emerald-400 hover:bg-emerald-300 rounded-xl transition-all cursor-pointer shadow-2xs shadow-emerald-400/20 disabled:opacity-50 whitespace-nowrap"
+            className="flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 py-2.5 sm:px-3.5 text-xs sm:text-sm font-bold text-emerald-950 bg-emerald-400 hover:bg-emerald-300 rounded-xl transition-all cursor-pointer shadow-2xs shadow-emerald-400/20 disabled:opacity-50 text-center leading-tight sm:leading-normal min-h-[56px] lg:min-h-0 whitespace-normal lg:whitespace-nowrap"
             title="Importar planilha de extrato bancário (Stone, Inter, Itaú, etc.)"
           >
             {isParsingExcel ? (
@@ -1635,7 +1635,7 @@ export default function Contas() {
             ) : (
               <FileSpreadsheet className="w-4 h-4 text-emerald-950 shrink-0" />
             )}
-            <span>Importar Extrato (Excel)</span>
+            <span className="text-center">Importar Extrato (Excel)</span>
           </button>
 
           {/* Hidden Excel File Input */}
@@ -1650,10 +1650,10 @@ export default function Contas() {
           {/* Add New Transaction Button */}
           <button
             onClick={() => handleOpenModal()}
-            className="flex items-center justify-center gap-2 px-3.5 py-2.5 text-xs sm:text-sm font-bold text-white bg-primary hover:bg-primary-light rounded-xl transition-all cursor-pointer shadow-2xs shadow-primary/20 whitespace-nowrap"
+            className="flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 py-2.5 sm:px-3.5 text-xs sm:text-sm font-bold text-white bg-primary hover:bg-primary-light rounded-xl transition-all cursor-pointer shadow-2xs shadow-primary/20 text-center leading-tight sm:leading-normal min-h-[56px] lg:min-h-0 whitespace-normal lg:whitespace-nowrap"
           >
             <PlusCircle className="w-4 h-4 text-amber-400 shrink-0" />
-            <span>Nova Movimentação</span>
+            <span className="text-center">Nova Movimentação</span>
           </button>
         </div>
       </div>
@@ -1983,110 +1983,205 @@ export default function Contas() {
             </div>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs sm:text-sm">
-              <thead className="bg-gray-50 border-b border-gray-100 text-gray-600 uppercase font-bold text-[11px] tracking-wider">
-                <tr>
-                  <th className="py-3.5 px-4">Data</th>
-                  <th className="py-3.5 px-4">Descrição / Histórico</th>
-                  <th className="py-3.5 px-4">Categoria</th>
-                  <th className="py-3.5 px-4 text-center">Tipo</th>
-                  <th className="py-3.5 px-4 text-right">Valor (R$)</th>
-                  <th className="py-3.5 px-4 text-center">Comprovante</th>
-                  <th className="py-3.5 px-4 text-center">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 font-medium">
-                {filteredTransactions.map((item) => {
-                  const catStyle = CATEGORY_COLORS[item.category] || { bg: 'bg-gray-100', text: 'text-gray-700', dot: '#6b7280' };
-                  const formattedDate = format(parseISO(item.date), 'dd/MM/yyyy');
-                  const hasProof = Boolean(item.proofUrl || item.driveUrl);
+          <div>
+            {/* Mobile Cards View (md:hidden) */}
+            <div className="md:hidden divide-y divide-gray-100">
+              {filteredTransactions.map((item) => {
+                const catStyle = CATEGORY_COLORS[item.category] || { bg: 'bg-gray-100', text: 'text-gray-700', dot: '#6b7280' };
+                const formattedDate = format(parseISO(item.date), 'dd/MM/yyyy');
+                const hasProof = Boolean(item.proofUrl || item.driveUrl);
 
-                  return (
-                    <tr key={item.id} className="hover:bg-gray-50/80 transition-colors">
-                      {/* Date */}
-                      <td className="py-3.5 px-4 whitespace-nowrap font-mono text-gray-600">
-                        {formattedDate}
-                      </td>
-
-                      {/* Description */}
-                      <td className="py-3.5 px-4">
-                        <div className="font-bold text-gray-900">{item.description}</div>
-                        {item.notes && (
-                          <div className="text-[11px] text-gray-500 italic mt-0.5">{item.notes}</div>
-                        )}
-                      </td>
-
-                      {/* Category */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold ${catStyle.bg} ${catStyle.text}`}>
-                          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: catStyle.dot }} />
-                          {item.category}
+                return (
+                  <div key={item.id} className="p-4 bg-white space-y-3">
+                    {/* Top: Data + Badge (Entrada/Saída) + Valor em destaque */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-semibold text-gray-500">
+                          {formattedDate}
                         </span>
-                      </td>
-
-                      {/* Type Badge */}
-                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
                         {item.type === 'income' ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-extrabold text-xs">
-                            <ArrowUpCircle className="w-3.5 h-3.5" />
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-extrabold text-[11px]">
+                            <ArrowUpCircle className="w-3 h-3 shrink-0" />
                             Entrada
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 font-extrabold text-xs">
-                            <ArrowDownCircle className="w-3.5 h-3.5" />
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 font-extrabold text-[11px]">
+                            <ArrowDownCircle className="w-3 h-3 shrink-0" />
                             Saída
                           </span>
                         )}
-                      </td>
+                      </div>
 
-                      {/* Amount */}
-                      <td className="py-3.5 px-4 text-right whitespace-nowrap font-mono font-bold">
+                      <div className="font-mono font-black text-sm sm:text-base">
                         <span className={item.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}>
                           {item.type === 'income' ? '+' : '-'} R$ {item.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
-                      </td>
+                      </div>
+                    </div>
 
-                      {/* Attached Proof Button */}
-                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                    {/* Middle: Título/Descrição do lançamento e detalhes/origem */}
+                    <div>
+                      <h4 className="font-bold text-gray-900 text-sm leading-snug">{item.description}</h4>
+                      {item.notes && (
+                        <p className="text-xs text-gray-500 italic mt-0.5">{item.notes}</p>
+                      )}
+                    </div>
+
+                    {/* Tag: Categoria */}
+                    <div>
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold ${catStyle.bg} ${catStyle.text}`}>
+                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: catStyle.dot }} />
+                        {item.category}
+                      </span>
+                    </div>
+
+                    {/* Footer: Status de anexo e os botões de Ações (Editar e Excluir) */}
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs">
+                      <div>
                         {hasProof ? (
                           <button
                             onClick={() => setPreviewProof(item)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-50 text-amber-900 hover:bg-amber-100 transition text-xs font-bold border border-amber-200/60 cursor-pointer shadow-2xs"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-900 hover:bg-amber-100 transition text-[11px] font-bold border border-amber-200/60 cursor-pointer shadow-2xs"
                             title="Ver arquivo de comprovante / foto da nota fiscal"
                           >
-                            <Eye className="w-3.5 h-3.5 text-amber-600" />
-                            <span>Ver Comprovante</span>
+                            <Eye className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                            <span>Comprovante</span>
                           </button>
                         ) : (
-                          <span className="text-gray-400 text-xs italic">Sem anexo</span>
+                          <span className="text-gray-400 text-[11px] italic">Sem anexo</span>
                         )}
-                      </td>
+                      </div>
 
-                      {/* Actions */}
-                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                        <div className="flex items-center justify-center gap-2">
-                          <button
-                            onClick={() => handleOpenModal(item)}
-                            className="p-1.5 text-gray-500 hover:text-primary hover:bg-gray-100 rounded-lg transition cursor-pointer"
-                            title="Editar Lançamento"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(item)}
-                            className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
-                            title="Excluir Lançamento"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleOpenModal(item)}
+                          className="px-2.5 py-1.5 text-slate-700 hover:text-primary hover:bg-slate-100 rounded-lg transition cursor-pointer flex items-center gap-1 text-xs font-bold"
+                          title="Editar Lançamento"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                          <span>Editar</span>
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item)}
+                          className="px-2.5 py-1.5 text-slate-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer flex items-center gap-1 text-xs font-bold"
+                          title="Excluir Lançamento"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Excluir</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop Table View (hidden md:block) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-xs sm:text-sm">
+                <thead className="bg-gray-50 border-b border-gray-100 text-gray-600 uppercase font-bold text-[11px] tracking-wider">
+                  <tr>
+                    <th className="py-3.5 px-4">Data</th>
+                    <th className="py-3.5 px-4">Descrição / Histórico</th>
+                    <th className="py-3.5 px-4">Categoria</th>
+                    <th className="py-3.5 px-4 text-center">Tipo</th>
+                    <th className="py-3.5 px-4 text-right">Valor (R$)</th>
+                    <th className="py-3.5 px-4 text-center">Comprovante</th>
+                    <th className="py-3.5 px-4 text-center">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 font-medium">
+                  {filteredTransactions.map((item) => {
+                    const catStyle = CATEGORY_COLORS[item.category] || { bg: 'bg-gray-100', text: 'text-gray-700', dot: '#6b7280' };
+                    const formattedDate = format(parseISO(item.date), 'dd/MM/yyyy');
+                    const hasProof = Boolean(item.proofUrl || item.driveUrl);
+
+                    return (
+                      <tr key={item.id} className="hover:bg-gray-50/80 transition-colors">
+                        {/* Date */}
+                        <td className="py-3.5 px-4 whitespace-nowrap font-mono text-gray-600">
+                          {formattedDate}
+                        </td>
+
+                        {/* Description */}
+                        <td className="py-3.5 px-4">
+                          <div className="font-bold text-gray-900">{item.description}</div>
+                          {item.notes && (
+                            <div className="text-[11px] text-gray-500 italic mt-0.5">{item.notes}</div>
+                          )}
+                        </td>
+
+                        {/* Category */}
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold ${catStyle.bg} ${catStyle.text}`}>
+                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: catStyle.dot }} />
+                            {item.category}
+                          </span>
+                        </td>
+
+                        {/* Type Badge */}
+                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                          {item.type === 'income' ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-extrabold text-xs">
+                              <ArrowUpCircle className="w-3.5 h-3.5" />
+                              Entrada
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 font-extrabold text-xs">
+                              <ArrowDownCircle className="w-3.5 h-3.5" />
+                              Saída
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Amount */}
+                        <td className="py-3.5 px-4 text-right whitespace-nowrap font-mono font-bold">
+                          <span className={item.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}>
+                            {item.type === 'income' ? '+' : '-'} R$ {item.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </td>
+
+                        {/* Attached Proof Button */}
+                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                          {hasProof ? (
+                            <button
+                              onClick={() => setPreviewProof(item)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-50 text-amber-900 hover:bg-amber-100 transition text-xs font-bold border border-amber-200/60 cursor-pointer shadow-2xs"
+                              title="Ver arquivo de comprovante / foto da nota fiscal"
+                            >
+                              <Eye className="w-3.5 h-3.5 text-amber-600" />
+                              <span>Ver Comprovante</span>
+                            </button>
+                          ) : (
+                            <span className="text-gray-400 text-xs italic">Sem anexo</span>
+                          )}
+                        </td>
+
+                        {/* Actions */}
+                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => handleOpenModal(item)}
+                              className="p-1.5 text-gray-500 hover:text-primary hover:bg-gray-100 rounded-lg transition cursor-pointer"
+                              title="Editar Lançamento"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(item)}
+                              className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
+                              title="Excluir Lançamento"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>
