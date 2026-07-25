@@ -492,27 +492,32 @@ async function processFileToDataUrl(file: File): Promise<{ url: string; name: st
 }
 
 export default function Contas() {
+  // ==========================================
+  // 1. ESTADOS DE CONTROLE GERAL E CARREGAMENTO
+  // ==========================================
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
 
-  // Filters State
-  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
-    return format(new Date(), 'yyyy-MM');
-  });
+  // ==========================================
+  // 2. ESTADOS DE FILTROS E BUSCA
+  // ==========================================
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => format(new Date(), 'yyyy-MM'));
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<'all' | 'income' | 'expense'>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
 
-  // Modal State for Add / Edit
+  // ==========================================
+  // 3. ESTADOS DE MODAIS E EDIÇÃO DE LANÇAMENTOS
+  // ==========================================
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Transaction | null>(null);
-
-  // Modal State for Viewing Attached Proof
   const [previewProof, setPreviewProof] = useState<Transaction | null>(null);
 
-  // Form inputs for Manual Entry
+  // ==========================================
+  // 4. ESTADOS DO FORMULÁRIO DE ENTRADA MANUAL
+  // ==========================================
   const [formDate, setFormDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [formDescription, setFormDescription] = useState<string>('');
   const [formType, setFormType] = useState<'income' | 'expense'>('expense');
@@ -520,7 +525,9 @@ export default function Contas() {
   const [formAmount, setFormAmount] = useState<string>('');
   const [formNotes, setFormNotes] = useState<string>('');
 
-  // Proof File State
+  // ==========================================
+  // 5. ESTADOS DE ANEXOS E LEITURA DE RECIBOS (IA)
+  // ==========================================
   const [formProofUrl, setFormProofUrl] = useState<string>('');
   const [formProofName, setFormProofName] = useState<string>('');
   const [formProofType, setFormProofType] = useState<string>('');
@@ -528,7 +535,9 @@ export default function Contas() {
   const [isAnalyzingReceipt, setIsAnalyzingReceipt] = useState(false);
   const [aiScanNotice, setAiScanNotice] = useState<string | null>(null);
 
-  // Excel Import Module State
+  // ==========================================
+  // 6. ESTADOS DO MÓDULO DE IMPORTAÇÃO EXCEL
+  // ==========================================
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importedFileName, setImportedFileName] = useState<string>('');
   const [importedRows, setImportedRows] = useState<ImportedTransactionPreview[]>([]);
@@ -536,8 +545,15 @@ export default function Contas() {
   const [importSearchTerm, setImportSearchTerm] = useState('');
   const [isImportingProgress, setIsImportingProgress] = useState(false);
 
+  // ==========================================
+  // 7. REFERÊNCIAS DE ELEMENTOS (REFS)
+  // ==========================================
   const fileInputRef = useRef<HTMLInputElement>(null);
   const excelFileInputRef = useRef<HTMLInputElement>(null);
+
+  // ==========================================
+  // 8. FUNÇÕES DE DADOS (Firestore / Seeding)
+  // ==========================================
 
   // Load transactions from Firestore
   async function loadData() {
@@ -560,6 +576,23 @@ export default function Contas() {
       }
     } catch (err) {
       console.error('Error loading financial entries:', err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Optional manual seeding of sample data
+  async function handleSeedSampleData() {
+    if (!confirm('Deseja carregar os lançamentos de exemplo?')) return;
+    setLoading(true);
+    try {
+      for (const seedItem of SEED_DATA) {
+        await addDoc(collection(db, 'contas_lancamentos'), seedItem);
+      }
+      await loadData();
+    } catch (err) {
+      console.error('Erro ao carregar dados de exemplo:', err);
+      alert('Erro ao carregar dados de exemplo.');
     } finally {
       setLoading(false);
     }

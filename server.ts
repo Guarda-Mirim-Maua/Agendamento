@@ -66,19 +66,17 @@ Examine o comprovante anexado e extraia as seguintes informações estruturadas 
 
       const response = await ai.models.generateContent({
         model: 'gemini-3.6-flash',
-        contents: {
-          parts: [
-            {
-              inlineData: {
-                data: base64Data,
-                mimeType: cleanMimeType,
-              },
+        contents: [
+          {
+            inlineData: {
+              data: base64Data,
+              mimeType: cleanMimeType,
             },
-            {
-              text: prompt,
-            },
-          ],
-        },
+          },
+          {
+            text: prompt,
+          },
+        ],
         config: {
           responseMimeType: 'application/json',
           responseSchema: {
