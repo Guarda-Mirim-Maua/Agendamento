@@ -7,8 +7,20 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // JSON payload parser limit
-  app.use(express.json({ limit: '20mb' }));
+  // CORS Middleware to handle OPTIONS preflight requests
+  app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(200);
+    }
+    next();
+  });
+
+  // JSON and URL encoded payload parser limit (50mb for high-res images / PDFs)
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
   // API Routes
   app.get('/api/health', (req, res) => {
@@ -87,7 +99,7 @@ Examine o comprovante anexado e extraia as seguintes informações estruturadas 
       ];
 
       let rawText = '';
-      const modelsToTry = ['gemini-3.6-flash', 'gemini-flash-latest', 'gemini-3.1-pro-preview'];
+      const modelsToTry = ['gemini-2.5-flash', 'gemini-3.6-flash', 'gemini-2.5-pro', 'gemini-flash-latest'];
       let lastError: unknown = null;
 
       // Attempt 1: With responseSchema
@@ -168,6 +180,16 @@ Examine o comprovante anexado e extraia as seguintes informações estruturadas 
         error: errorMessage,
       });
     }
+  });
+
+  // Express error handler middleware for API routes
+  app.use((err: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (res.headersSent) {
+      return next(err);
+    }
+    console.error('Express request error:', err);
+    const message = err instanceof Error ? err.message : 'Erro interno do servidor';
+    return res.status(500).json({ error: message });
   });
 
   // Vite middleware for development

@@ -1161,8 +1161,15 @@ export default function Contas() {
             }),
           });
 
-          const resData = await apiRes.json();
-          if (resData.success && resData.data) {
+          const responseText = await apiRes.text();
+          let resData: any = null;
+          try {
+            resData = JSON.parse(responseText);
+          } catch {
+            resData = null;
+          }
+
+          if (apiRes.ok && resData && resData.success && resData.data) {
             const { amount, date, description, notes, category, type } = resData.data;
 
             // 1. Type (Entrada vs Saída)
@@ -1201,7 +1208,7 @@ export default function Contas() {
 
             setAiScanNotice('Recibo lido com sucesso pela IA! Os campos Valor, Descrição, Observações e Categoria foram preenchidos.');
           } else {
-            const errorText = resData.error || 'Não foi possível extrair dados automaticamente.';
+            const errorText = (resData && resData.error) || 'Não foi possível extrair dados automaticamente.';
             setAiScanNotice(`Aviso da Leitura IA: ${errorText}`);
           }
         } catch (aiErr) {
