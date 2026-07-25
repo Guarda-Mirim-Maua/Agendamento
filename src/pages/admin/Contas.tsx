@@ -1152,24 +1152,147 @@ export default function Contas() {
       if (processed.type.startsWith('image/') || processed.type === 'application/pdf') {
         setIsAnalyzingReceipt(true);
         try {
-          const apiRes = await fetch('/api/analyze-receipt', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              imageBase64: processed.url,
-              mimeType: processed.type,
-            }),
-          });
-
-          const responseText = await apiRes.text();
           let resData: any = null;
+          let isOk = false;
+
+          // 1. Try server API endpoint
           try {
-            resData = JSON.parse(responseText);
-          } catch {
-            resData = null;
+            const apiRes = await fetch('/api/analyze-receipt', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                imageBase64: processed.url,
+                mimeType: processed.type,
+              }),
+            });
+
+            if (apiRes.ok) {
+              const responseText = await apiRes.text();
+              try {
+                resData = JSON.parse(responseText);
+                if (resData && resData.success) {
+                  isOk = true;
+                }
+              } catch {
+                resData = null;
+              }
+            }
+          } catch (serverErr) {
+            console.warn('Server endpoint /api/analyze-receipt failed or offline:', serverErr);
           }
 
-          if (apiRes.ok && resData && resData.success && resData.data) {
+          // 2. Client-side Fallback using @google/genai if server endpoint failed or returned non-ok
+          if (!isOk) {
+            const clientApiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY);
+            if (clientApiKey) {
+              try {
+                const { GoogleGenAI, Type } = await import('@google/genai');
+                const ai = new GoogleGenAI({ apiKey: clientApiKey });
+
+                let cleanMimeType = processed.type || 'image/png';
+                const dataUriMatch = processed.url.match(/^data:([^;]+);base64,/);
+                if (dataUriMatch && dataUriMatch[1]) {
+                  cleanMimeType = dataUriMatch[1];
+                }
+                const base64Data = processed.url.replace(/^data:[^;]+;base64,/, '').trim();
+
+                const prompt = `Você é um assistente contábil perito em analisar recibos, notas fiscais, faturas e comprovantes de pagamento para a entidade social "Guarda Mirim de Mauá" (CIIJM).
+
+Analise o comprovante fornecido e extraia com precisão absoluta:
+1. "amount": Valor total (número float, ex: 152.00).
+2. "date": Data do pagamento/emissão em formato YYYY-MM-DD.
+3. "description": Nome da empresa/pessoa/fornecedor emissor do comprovante.
+4. "notes": Descrição/detalhes dos produtos, serviços ou itens listados no comprovante.
+5. "category": Selecione a categoria mais adequada dentre as seguintes opções EXATAS:
+   - "Operacionais (Luz, Água, Internet, Tel)"
+   - "Manutenção de Infraestrutura e Reformas"
+   - "Alimentação e Eventos Infantis"
+   - "Materiais Pedagógicos e Didáticos"
+   - "Combustível, Transporte e Logística"
+   - "Encargos, Tarifas Bancárias e Impostos"
+   - "Subvenções e Convênios Municipais"
+   - "Doações e Colaborações Voluntárias"
+   - "Serviços Prestados e Mensalidades"
+   - "Eventos Beneficentes e Bazares"
+   - "Outras Despesas"
+   - "Outras Receitas"
+6. "type": "expense" se for despesa/comprovante de pagamento/saída, ou "income" se for recibo de doação/receita/entrada. Default é "expense".`;
+
+                const contentsPayload = [
+                  {
+                    role: 'user',
+                    parts: [
+                      { inlineData: { data: base64Data, mimeType: cleanMimeType } },
+                      { text: prompt },
+                    ],
+                  },
+                ];
+
+                let clientRawText = '';
+                const modelsToTry = ['gemini-2.5-flash', 'gemini-3.6-flash', 'gemini-2.5-pro', 'gemini-flash-latest'];
+
+                for (const modelName of modelsToTry) {
+                  try {
+                    const response = await ai.models.generateContent({
+                      model: modelName,
+                      contents: contentsPayload,
+                      config: {
+                        responseMimeType: 'application/json',
+                        responseSchema: {
+                          type: Type.OBJECT,
+                          properties: {
+                            amount: { type: Type.NUMBER },
+                            date: { type: Type.STRING },
+                            description: { type: Type.STRING },
+                            notes: { type: Type.STRING },
+                            category: { type: Type.STRING },
+                            type: { type: Type.STRING },
+                          },
+                          required: ['amount', 'description', 'notes', 'category', 'type'],
+                        },
+                      },
+                    });
+                    if (response?.text) {
+                      clientRawText = response.text;
+                      break;
+                    }
+                  } catch (clientErr) {
+                    console.warn(`Client model ${modelName} failed:`, clientErr);
+                  }
+                }
+
+                if (!clientRawText) {
+                  for (const modelName of modelsToTry) {
+                    try {
+                      const response = await ai.models.generateContent({
+                        model: modelName,
+                        contents: contentsPayload,
+                      });
+                      if (response?.text) {
+                        clientRawText = response.text;
+                        break;
+                      }
+                    } catch (clientErr) {
+                      console.warn(`Client model fallback ${modelName} failed:`, clientErr);
+                    }
+                  }
+                }
+
+                if (clientRawText) {
+                  let jsonText = clientRawText.trim().replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/```$/, '').trim();
+                  const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+                  if (jsonMatch) jsonText = jsonMatch[0];
+                  const parsedData = JSON.parse(jsonText);
+                  resData = { success: true, data: parsedData };
+                  isOk = true;
+                }
+              } catch (clientAiErr) {
+                console.warn('Client-side Gemini extraction exception:', clientAiErr);
+              }
+            }
+          }
+
+          if (isOk && resData && resData.success && resData.data) {
             const { amount, date, description, notes, category, type } = resData.data;
 
             // 1. Type (Entrada vs Saída)
