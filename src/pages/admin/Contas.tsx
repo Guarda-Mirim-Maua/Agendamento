@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { db } from '../../lib/firebase';
+import { useBranding } from '../../hooks/useBranding';
 import {
   collection,
   query,
@@ -43,7 +44,7 @@ import {
   Square,
   FileCheck2,
   Sparkles,
-  LayoutDashboard
+  LayoutDashboard,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -492,6 +493,8 @@ async function processFileToDataUrl(file: File): Promise<{ url: string; name: st
 }
 
 export default function Contas() {
+  const { logo } = useBranding();
+
   // ==========================================
   // 1. ESTADOS DE CONTROLE GERAL E CARREGAMENTO
   // ==========================================
@@ -1558,28 +1561,46 @@ export default function Contas() {
   return (
     <div className="min-h-screen bg-slate-50/70 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-primary uppercase tracking-wider mb-1">
-            <LandmarkIcon className="w-4 h-4 text-primary shrink-0" />
-            <span>Centro de Integração Infanto Juvenil de Mauá - CIIJM</span>
+      <div className="bg-white p-5 sm:p-7 rounded-2xl shadow-xs border border-gray-200 space-y-5">
+        {/* Title and Logo Header Area */}
+        <div className="relative flex flex-col items-center justify-center text-center py-1 sm:px-28 md:px-32">
+          {logo ? (
+            <div className="sm:absolute sm:left-0 sm:top-1/2 sm:-translate-y-1/2 mb-3 sm:mb-0 p-2 bg-slate-50 border border-slate-200 rounded-2xl shadow-xs shrink-0 flex items-center justify-center">
+              <img
+                src={logo}
+                alt="Logo Guarda Mirim"
+                className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 object-contain"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+          ) : (
+            <div className="sm:absolute sm:left-0 sm:top-1/2 sm:-translate-y-1/2 mb-3 sm:mb-0 p-3 bg-primary/10 text-primary rounded-2xl shrink-0 flex items-center justify-center">
+              <LandmarkIcon className="w-10 h-10 sm:w-14 sm:h-14" />
+            </div>
+          )}
+
+          <div className="w-full space-y-1 text-center">
+            <div className="text-xs sm:text-sm md:text-base font-extrabold text-primary uppercase tracking-wide">
+              Centro de Integração Infanto Juvenil de Mauá - CIIJM
+            </div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-gray-900 tracking-tight">
+              Gestão Financeira &amp; Tesouraria
+            </h1>
+            <p className="text-xs sm:text-sm md:text-base text-gray-500 font-medium leading-relaxed">
+              Controle interno de caixa, importação de extratos bancários e relatórios contábeis.
+            </p>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
-            Gestão Financeira & Tesouraria
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Controle interno de caixa, importação de extratos bancários e relatórios contábeis.
-          </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        {/* 4 Action Buttons Bar */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 border-t border-gray-100 pt-4">
           {/* Link to Admin Panel */}
           <Link
             to="/admin"
-            className="flex items-center gap-2 px-3.5 py-2.5 text-xs sm:text-sm font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl transition-all cursor-pointer shadow-xs"
+            className="flex items-center justify-center gap-2 px-3.5 py-2.5 text-xs sm:text-sm font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl transition-all cursor-pointer shadow-2xs whitespace-nowrap"
             title="Ir para o Painel Administrativo da Agenda"
           >
-            <LayoutDashboard className="w-4 h-4 text-slate-600" />
+            <LayoutDashboard className="w-4 h-4 text-slate-600 shrink-0" />
             <span>Painel Admin</span>
           </Link>
 
@@ -1587,13 +1608,13 @@ export default function Contas() {
           <button
             onClick={handleGeneratePdf}
             disabled={exportingPdf}
-            className="flex items-center gap-2 px-3.5 py-2.5 text-xs sm:text-sm font-bold text-white bg-slate-800 hover:bg-slate-900 rounded-xl transition-all cursor-pointer shadow-sm disabled:opacity-50"
+            className="flex items-center justify-center gap-2 px-3.5 py-2.5 text-xs sm:text-sm font-bold text-white bg-slate-800 hover:bg-slate-900 rounded-xl transition-all cursor-pointer shadow-2xs disabled:opacity-50 whitespace-nowrap"
             title="Gerar Relatório em PDF para Contabilidade"
           >
             {exportingPdf ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin shrink-0" />
             ) : (
-              <Download className="w-4 h-4 text-emerald-400" />
+              <Download className="w-4 h-4 text-emerald-400 shrink-0" />
             )}
             <span>Gerar Relatório PDF</span>
           </button>
@@ -1606,18 +1627,18 @@ export default function Contas() {
               }
             }}
             disabled={isParsingExcel}
-            className="flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-bold text-emerald-950 bg-emerald-400 hover:bg-emerald-300 rounded-xl transition-all cursor-pointer shadow-md shadow-emerald-400/20"
+            className="flex items-center justify-center gap-2 px-3.5 py-2.5 text-xs sm:text-sm font-bold text-emerald-950 bg-emerald-400 hover:bg-emerald-300 rounded-xl transition-all cursor-pointer shadow-2xs shadow-emerald-400/20 disabled:opacity-50 whitespace-nowrap"
             title="Importar planilha de extrato bancário (Stone, Inter, Itaú, etc.)"
           >
             {isParsingExcel ? (
-              <Loader2 className="w-4 h-4 animate-spin text-emerald-950" />
+              <Loader2 className="w-4 h-4 animate-spin text-emerald-950 shrink-0" />
             ) : (
-              <FileSpreadsheet className="w-4 h-4 text-emerald-950" />
+              <FileSpreadsheet className="w-4 h-4 text-emerald-950 shrink-0" />
             )}
             <span>Importar Extrato (Excel)</span>
           </button>
 
-          {/* Hidden Excel File Input for Top Button */}
+          {/* Hidden Excel File Input */}
           <input
             ref={excelFileInputRef}
             type="file"
@@ -1629,92 +1650,92 @@ export default function Contas() {
           {/* Add New Transaction Button */}
           <button
             onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 px-4.5 py-2.5 text-xs sm:text-sm font-bold text-white bg-primary hover:bg-primary-light rounded-xl transition-all cursor-pointer shadow-md shadow-primary/20"
+            className="flex items-center justify-center gap-2 px-3.5 py-2.5 text-xs sm:text-sm font-bold text-white bg-primary hover:bg-primary-light rounded-xl transition-all cursor-pointer shadow-2xs shadow-primary/20 whitespace-nowrap"
           >
-            <PlusCircle className="w-4 h-4 text-amber-400" />
+            <PlusCircle className="w-4 h-4 text-amber-400 shrink-0" />
             <span>Nova Movimentação</span>
           </button>
         </div>
       </div>
 
       {/* Summary Cards Top */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {/* Card 1: Saldo Acumulado em Caixa */}
-        <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-xs relative overflow-hidden">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
+        <div className="bg-white rounded-2xl p-3.5 sm:p-5 border border-gray-200 shadow-xs relative overflow-hidden flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-1 mb-2 sm:mb-3">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 truncate">
               Saldo Atual em Caixa
             </span>
-            <div className="p-2.5 rounded-xl bg-blue-50 text-primary">
-              <Wallet className="w-5 h-5" />
+            <div className="p-1.5 sm:p-2.5 rounded-xl bg-blue-50 text-primary shrink-0">
+              <Wallet className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
             </div>
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className={`text-2xl sm:text-3xl font-black ${totals.totalCashBalance >= 0 ? 'text-blue-900' : 'text-red-600'}`}>
+          <div className="flex items-baseline gap-1 sm:gap-2">
+            <span className={`text-base sm:text-2xl lg:text-3xl font-black tracking-tight ${totals.totalCashBalance >= 0 ? 'text-blue-900' : 'text-red-600'}`}>
               R$ {totals.totalCashBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
-          <p className="text-[11px] text-gray-400 mt-2">
-            Acumulado total de todas as movimentações
+          <p className="text-[10px] sm:text-[11px] text-gray-400 mt-1 sm:mt-2 truncate">
+            Acumulado total de movimentações
           </p>
         </div>
 
         {/* Card 2: Total Entradas do Mês */}
-        <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-xs relative overflow-hidden">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">
+        <div className="bg-white rounded-2xl p-3.5 sm:p-5 border border-gray-200 shadow-xs relative overflow-hidden flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-1 mb-2 sm:mb-3">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-emerald-700 truncate">
               Entradas do Mês
             </span>
-            <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600">
-              <ArrowUpCircle className="w-5 h-5" />
+            <div className="p-1.5 sm:p-2.5 rounded-xl bg-emerald-50 text-emerald-600 shrink-0">
+              <ArrowUpCircle className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
             </div>
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-black text-emerald-600">
+          <div className="flex items-baseline gap-1 sm:gap-2">
+            <span className="text-base sm:text-2xl lg:text-3xl font-black text-emerald-600 tracking-tight">
               + R$ {totals.monthIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
-          <p className="text-[11px] text-gray-400 mt-2 capitalize">
+          <p className="text-[10px] sm:text-[11px] text-gray-400 mt-1 sm:mt-2 capitalize truncate">
             {monthDisplayTitle}
           </p>
         </div>
 
         {/* Card 3: Total Saídas do Mês */}
-        <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-xs relative overflow-hidden">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-rose-700">
+        <div className="bg-white rounded-2xl p-3.5 sm:p-5 border border-gray-200 shadow-xs relative overflow-hidden flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-1 mb-2 sm:mb-3">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-rose-700 truncate">
               Saídas do Mês
             </span>
-            <div className="p-2.5 rounded-xl bg-rose-50 text-rose-600">
-              <ArrowDownCircle className="w-5 h-5" />
+            <div className="p-1.5 sm:p-2.5 rounded-xl bg-rose-50 text-rose-600 shrink-0">
+              <ArrowDownCircle className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
             </div>
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-black text-rose-600">
+          <div className="flex items-baseline gap-1 sm:gap-2">
+            <span className="text-base sm:text-2xl lg:text-3xl font-black text-rose-600 tracking-tight">
               - R$ {totals.monthExpense.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
-          <p className="text-[11px] text-gray-400 mt-2 capitalize">
+          <p className="text-[10px] sm:text-[11px] text-gray-400 mt-1 sm:mt-2 capitalize truncate">
             {monthDisplayTitle}
           </p>
         </div>
 
         {/* Card 4: Saldo do Período */}
-        <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-xs relative overflow-hidden">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
+        <div className="bg-white rounded-2xl p-3.5 sm:p-5 border border-gray-200 shadow-xs relative overflow-hidden flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-1 mb-2 sm:mb-3">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-gray-500 truncate">
               Saldo do Período
             </span>
-            <div className={`p-2.5 rounded-xl ${totals.monthBalance >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
-              <DollarSign className="w-5 h-5" />
+            <div className={`p-1.5 sm:p-2.5 rounded-xl ${totals.monthBalance >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'} shrink-0`}>
+              <DollarSign className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
             </div>
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className={`text-2xl sm:text-3xl font-black ${totals.monthBalance >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
+          <div className="flex items-baseline gap-1 sm:gap-2">
+            <span className={`text-base sm:text-2xl lg:text-3xl font-black tracking-tight ${totals.monthBalance >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
               R$ {totals.monthBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
-          <p className="text-[11px] text-gray-400 mt-2 capitalize">
+          <p className="text-[10px] sm:text-[11px] text-gray-400 mt-1 sm:mt-2 capitalize truncate">
             Resultado de {monthDisplayTitle}
           </p>
         </div>
