@@ -492,6 +492,59 @@ async function processFileToDataUrl(file: File): Promise<{ url: string; name: st
   });
 }
 
+// Helper to generate a default emblem logo data URL if no custom logo is configured
+function getDefaultLogoDataUrl(): string {
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = 200;
+    canvas.height = 200;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return '';
+
+    // Circle background
+    ctx.fillStyle = '#0f172a'; // slate-900
+    ctx.beginPath();
+    ctx.arc(100, 100, 92, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Outer Gold Ring
+    ctx.strokeStyle = '#eab308'; // yellow-500
+    ctx.lineWidth = 6;
+    ctx.stroke();
+
+    // Shield Emblem
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.moveTo(100, 35);
+    ctx.lineTo(152, 55);
+    ctx.lineTo(152, 115);
+    ctx.quadraticCurveTo(152, 158, 100, 172);
+    ctx.quadraticCurveTo(48, 158, 48, 115);
+    ctx.lineTo(48, 55);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    // Emblem Text GM
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 38px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('GM', 100, 90);
+
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = 'bold 18px sans-serif';
+    ctx.fillText('CIIJM', 100, 128);
+
+    return canvas.toDataURL('image/png');
+  } catch (e) {
+    console.error('Error generating default logo canvas:', e);
+    return '';
+  }
+}
+
 export default function Contas() {
   const { logo } = useBranding();
 
@@ -1432,6 +1485,20 @@ Analise o comprovante fornecido e extraia com precisão absoluta:
       });
 
       const pageWidth = docPdf.internal.pageSize.getWidth(); // 210mm
+
+      // Render Logo at Top Left Header
+      const activeLogo = logo || localStorage.getItem('guarda_mirim_custom_logo');
+      const logoToRender = activeLogo || getDefaultLogoDataUrl();
+
+      if (logoToRender) {
+        try {
+          const isJpeg = logoToRender.startsWith('data:image/jpeg') || logoToRender.startsWith('data:image/jpg');
+          const format = isJpeg ? 'JPEG' : 'PNG';
+          docPdf.addImage(logoToRender, format, 14, 7, 18, 18);
+        } catch (logoErr) {
+          console.warn('Could not add logo to PDF:', logoErr);
+        }
+      }
 
       // Header Title
       docPdf.setFont('helvetica', 'bold');
