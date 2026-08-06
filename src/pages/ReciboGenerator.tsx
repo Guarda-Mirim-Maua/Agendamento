@@ -1029,14 +1029,14 @@ export default function ReciboGenerator() {
                     ENTIDADE EMISSORA: CENTRO DE INTEGRAÇÃO INFANTO JUVENIL DE MAUÁ - GUARDA MIRIM
                   </p>
                   <p className="text-[10px] font-semibold leading-normal" style={{ color: '#64748b' }}>
-                    CNPJ: 50.136.704/0001-64 | Rua Indaiatuba, 294 – Jd. Haydeé - Centro, Mauá, SP
+                    CNPJ: 50.136.704/0001-64 | Rua Indaiatuba, 294 – Jd. Haydeé - Centro - Mauá
                   </p>
                 </div>
 
                 {/* Right side: Signature Zone */}
                 <div className="col-span-5 flex flex-col items-center text-center justify-end">
                   {/* Cursive Handwriting Signature "Sânderson" - positioned clearly above the line */}
-                  <div className="w-full h-12 flex items-end justify-center pb-0.5">
+                  <div className="w-full h-10 flex items-end justify-center pb-0.5">
                     {showSignature && (
                       <span 
                         style={{ fontFamily: "'Alex Brush', cursive", color: '#6b21a8' }}
