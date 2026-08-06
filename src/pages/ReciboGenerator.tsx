@@ -1034,19 +1034,19 @@ export default function ReciboGenerator() {
                 </div>
 
                 {/* Right side: Signature Zone */}
-                <div className="col-span-5 flex flex-col items-center text-center relative pt-8">
-                  {/* Cursive Handwriting Signature "Sânderson" - positioned cleanly above the line */}
-                  {showSignature && (
-                    <div className="absolute top-[-4px] left-0 right-0 flex items-center justify-center select-none pointer-events-none transition-opacity">
+                <div className="col-span-5 flex flex-col items-center text-center justify-end">
+                  {/* Cursive Handwriting Signature "Sânderson" - positioned clearly above the line */}
+                  <div className="w-full h-12 flex items-end justify-center pb-0.5">
+                    {showSignature && (
                       <span 
                         style={{ fontFamily: "'Alex Brush', cursive", color: '#6b21a8' }}
-                        className="text-[36px] font-medium tracking-wider -rotate-2"
+                        className="text-4xl font-normal tracking-wider -rotate-2 select-none pointer-events-none transform -translate-y-0.5"
                       >
                         Sânderson
                       </span>
-                    </div>
-                  )}
-                  <div className="w-full pt-1" style={{ borderTop: '1px solid #1e293b' }}>
+                    )}
+                  </div>
+                  <div className="w-full pt-1.5" style={{ borderTop: '1px solid #1e293b' }}>
                     <p className="text-xs font-black leading-tight" style={{ color: '#1e293b' }}>
                       SÂNDERSON CAIO LEITE DA SILVA
                     </p>
