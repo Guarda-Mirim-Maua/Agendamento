@@ -1040,7 +1040,7 @@ export default function ReciboGenerator() {
                     {showSignature && (
                       <span 
                         style={{ fontFamily: "'Alex Brush', cursive", color: '#6b21a8' }}
-                        className="text-4xl font-normal tracking-wider -rotate-2 select-none pointer-events-none transform -translate-y-0.5"
+                        className="text-4xl font-normal tracking-wider -rotate-2 select-none pointer-events-none transform -translate-y-0.9"
                       >
                         Sânderson
                       </span>
